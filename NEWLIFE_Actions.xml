@@ -1,0 +1,24 @@
+<Data>
+    <Action name="Travel">
+
+        <help>
+
+        </help>
+
+        <Requirements>
+
+        </Requirements>
+
+    </Action>
+
+
+
+    <Action name="Talk">
+        <Requirements>
+
+        </Requirements>
+
+
+
+
+    </Action>

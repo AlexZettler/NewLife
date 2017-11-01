@@ -1,0 +1,57 @@
+<Data>
+    <Race name="Human">
+        <Names>
+            <First>
+                <li>Alexander</li>
+                <li>Sebastian</li>
+                <li>Anon</li>
+                <li>Zain</li>
+                <li>Zack</li>
+                <li>Colin</li>
+                <li>Kam</li>
+                <li>Karan</li>
+                <li>Pravin</li>
+                <li>Peter</li>
+
+            </First>
+
+            <Last>
+                <li>Zettler</li>
+                <li>Smith</li>
+                <li>Brown</li>
+            </Last>
+
+        </Names>
+
+        <SkillMod>
+            <str>0</str>
+            <dex>0</dex>
+            <con>0</con>
+            <int>0</int>
+            <wis>0</wis>
+            <cha>0</cha>
+        </SkillMod>
+
+        <Needs>
+            <Physiology>
+                <food>5</food>
+                <starvationTime>7d</starvationTime>
+                <water>5</water>
+                <sleep>8</sleep>
+            </Physiology>
+        </Needs>
+
+        <Interests>
+
+
+        </Interests>
+
+
+
+    </Race>
+
+
+
+
+
+</Data>

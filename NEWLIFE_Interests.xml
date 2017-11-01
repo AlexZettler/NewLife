@@ -1,0 +1,20 @@
+<Data>
+
+    <interest name="hunting">
+        <linkedDesires>
+            <Desire name="storeFood">
+
+            </Desire>
+            <Desire name="storeWater">
+
+            </Desire>
+
+        </linkedDesires>
+
+    </interest>
+
+
+
+
+
+</Data>

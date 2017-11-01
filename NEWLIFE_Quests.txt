@@ -1,0 +1,47 @@
+
+Every NPC has a home where they interact on a day to day basis
+
+
+If an NPC requires to leave their home, it is considered a quest
+
+Quests cover a broad spectrum and includes
+    collecting food
+    gainig happiness
+    gaining wealth
+    
+Quest rewards are given upon actions of the quest being completed 
+
+
+
+
+
+
+
+
+Need     ---> Desire
+Interest ---> Desire ---> Actions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*******************
+https://www.raphkoster.com/2010/10/12/the-fundamentals-of-game-design/
+*******************
+
+    A player does something. (Input)
+    The opponent (which might be the computer) calculates a response(Model)
+    The player gets feedback.(Feedback)
+    The player learns from this feedback, and gets to do something again.(Mastery)

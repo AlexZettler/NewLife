@@ -1,0 +1,28 @@
+<Data>
+
+    <need name="food">
+        <linkedActions>
+
+            <action name="eat">
+
+                <prop name="hunger">"lt 75"</prop>
+                <urgency>sigBias(75,hunger)</urgency>
+            </action>
+
+            <action name="storeFood">
+
+            </action>
+
+            <action name="sleep">
+
+            </action>
+
+        </linkedActions>
+
+    </need>
+
+
+
+
+
+</Data>

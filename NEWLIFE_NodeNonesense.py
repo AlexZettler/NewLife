@@ -5,9 +5,17 @@ import copy
 import IDtrack
 
 import matplotlib.pyplot as pplot
+import matplotlib.backends.backend_qt5agg
 import numpy
 
-class NodeWrangler:
+import SomeExternalLibs.graphics as gfx
+
+
+#from sortedcontainers import SortedDict
+
+
+
+class NodeWrangler(object):
     def __init__(self):
 
         self.nodes = IDtrack.IDtracker()
@@ -15,19 +23,21 @@ class NodeWrangler:
 
         self._originalNodes = None
 
+        self.fig = None
+
     def __str__(self):
         return "\n".join(str(self.nodes[n]) for n in self.nodes)
 
-
-    def genNodes(self,n,radius=10):
+    def genNodes(self,n:int,radius:float):
         for i in range(n):
             rn = genRandInsideUnitCircle(radius)
             self.nodes.StoreVal(PhysicalNode(rn, 1.0, None))
         self._originalNodes = copy.deepcopy(self.nodes)
-    def genAllPhysicalLinks(self,strength):
-        #nkt = 0
-        #print("Node key length: {}".format(len(self.nodeKeys)))
-        #print(self.nodes.keys())
+
+    def genAllChargedLinks(self, strength:float):
+
+        #This guy can be optimized eventually by making a todo list that is iterated through and have values poped as the list is iterated through.
+
 
         completedkeys = []
 
@@ -40,30 +50,152 @@ class NodeWrangler:
 
                 pl = physicalNodeLink(self.nodes[key],self.nodes[connection])
 
-                self.links.StoreVal(pl)
+                linkkey = self.links.StoreVal(pl)
 
-                self.nodes[key].links.append(pl)
-                self.nodes[connection].links.append(pl)
+                self.nodes[key].links.append(linkkey)
+                self.nodes[connection].links.append(linkkey)
 
+    def removeAllLinksOfInstance(self, instanceType: type):
+
+        #literally black magic. Do not touch!
+
+        l = list(self.links.keys())
+        iternum = 0
+        indexPicker = 0
+        selection=0
+
+        while indexPicker <= len(self.links)-1-selection:
+            selection = iternum-indexPicker
+            if isinstance(self.links[iternum], instanceType):
+
+                #print(self.links[selection].n1.links)
+                self.links[selection].n1.links.pop(self.links[selection].n1.links.index(selection))
+                self.links[selection].n2.links.pop(self.links[selection].n2.links.index(selection))
+
+                self.links.delVal(selection)
+
+            else:
+                indexPicker+=1
+            iternum+=1
+
+    def removeAllLinksOfType(self, instanceType: type):
+
+        #Also Black Magic
+
+        l = list(self.links.keys())
+        iternum = 0
+        indexPicker = 0
+        selection=0
+
+        while indexPicker <= len(self.links)-1-selection:
+
+            selection = iternum - indexPicker
+
+            if type(self.links[iternum]) == instanceType:
+
+                #print(self.links[selection].n1.links)
+                self.links[selection].n1.links.pop(self.links[selection].n1.links.index(selection))
+                self.links[selection].n2.links.pop(self.links[selection].n2.links.index(selection))
+
+                self.links.delVal(selection)
+
+            else:
+                indexPicker+=1
+            iternum+=1
+
+    def get_unlinked_nodes(self):
+        return [n for n in self.nodes if len(self.nodes[n].links) == 0]
+
+
+
+
+    def genClosestNSpringLinks(self,N):
+        '''
+        try:
+
+            from sortedcollections import sortedDict
+
+            for n in self.nodes:
+
+                print("n={}/{}\n".format(n,len(self.nodes)-1))
+                lenDict = {}
+                for l in self.nodes[n].links:
+                    lenDict[l]= self.links[l].length()
+
+                #k: self.links[self.nodes[n].links[k]].length()for k in
+                sortedShortestKeys = SortedDict(lenDict).keys()[0:N]
+
+            print("linksd len is {}".format(len(linksd)))
+
+            #lengths="\n\t{}".join("" for j in linksd).format([lenDict[j] for j in linksd])
+
+
+            print("there are {} links their lengths are :".format(len(sortedShortestKeys)))#,lengths))
+            for i in sortedShortestKeys:
+                print(i,", ",lenDict[i])
+
+
+
+        except:
+        '''
+        for n in self.nodes:
+
+            print("n={}/{}total nodes. There are {} links".format(n, len(self.nodes)-1,len(self.nodes[n].links)))
+
+            lenDict = {k:self.links[k].lengthSquared() for k in self.nodes[n].links}
+
+            #vallist = [val for val in lenDict.values()]
+
+            LowestVal = None
+            LowestKeys = []
+            
+            for key in lenDict:
+                if len(LowestKeys) == N:
+                    break
+
+                if LowestVal is None:
+                    LowestVal = lenDict[key]
+
+                elif key not in LowestKeys:
+                    if lenDict[key] < LowestVal:
+                        LowestVal = lenDict[key]
+                        LowestKeys.append(key)
+
+
+            print("{} keys were selected at node {}".format(len(LowestKeys),n))
+            for k in LowestKeys:
+
+                print("The selected key was {} with a squared length of {}\n".format(k,lenDict[k]))
+
+                self.links[k] = SpringLink(self.links[k].n1, self.links[k].n2, desiredSpringLength=1.0, springStrength=1.0)
+
+                #self.nodes[n].links.append()
 
     @classmethod
-    def angFromSinCos(self,sinang,cosang):
+    def angFromSinCos(self, sinang:float, cosang:float):
+
+        #sinang,cosang = math.sin(sincomp),math.cos(coscomp)
 
         # Quadrant breakup
         #Q1
-        if sinang > 0 and cosang >= 0:
-            return cosang
+        if sinang > 0.0 and cosang >= 0.0:
+            #print("Q1")
+            return math.cos(cosang)
         # Q2
-        elif sinang < 0 and cosang >= 0:
-            return math.pi - cosang
+        elif sinang > 0.0 and cosang <= 0.0:
+            #print("Q2")
+            return math.pi - math.cos(cosang)
         # Q3
-        elif sinang < 0 and cosang <= 0:
-            return math.pi + cosang
+        elif sinang < 0.0 and cosang <= 0.0:
+            #print("Q3")
+            return math.pi + math.cos(cosang)
         # Q4
-        elif sinang < 0 and cosang >= 0:
-            return 2 * math.pi + cosang
+        elif sinang < 0.0 and cosang >= 0.0:
+            #print("Q4")
+            return 2 * math.pi - math.cos(cosang)
 
         else:
+            print("*Error with values of sin and cos components: {} {}*".format(sinang,cosang))
             raise ValueError
 
     def resetMoveVectors(self):
@@ -72,11 +204,14 @@ class NodeWrangler:
             #print("movVec: {}".format(type(self.nodes[n].moveVec)))
             self.nodes[n].moveVec = Pos2D((0, 0))
 
-    def iterativeCalculateForceVectors(self,iterations,startStr,endStr):
+    def iterativeCalculateForceVectors(self,iterations:int,startStr:float,endStr:float):
 
-        for i in range(iterations):
-            self.CalculateForceVectors((i+1)/iterations * startStr/endStr)
-            print("i/iterations: {}, startStr/endStr: {}, mul={}".format(i/iterations, startStr/endStr, i/iterations* startStr/endStr))
+        for x in range(iterations):
+            m=(endStr-startStr)/iterations
+            b=startStr
+
+            self.CalculateForceVectors(m*x+b)
+            #print("m,x,b = {},{},{}".format(m,x,b))
             self.ApplyVectors()
 
 
@@ -90,25 +225,39 @@ class NodeWrangler:
             hypSq = self.links[l].lengthSquared()
             hyp = math.sqrt(hypSq)
 
-            sinang = math.sin(self.links[l].deltaY / hyp)
-            cosang = math.cos(self.links[l].deltaX / hyp)
-            ang = NodeWrangler.angFromSinCos(sinang,cosang)
+            sincomp = self.links[l].deltaY / hyp
+            coscomp = self.links[l].deltaX / hyp
+            #print(sincomp, coscomp)
 
-            #print("cosang: {} sinang: {}".format(cosang*180/math.pi,sinang*180/math.pi))
-            #n.moveVec.x += (l.n1 * l.n2)
+            ang = NodeWrangler.angFromSinCos(sincomp, coscomp)
+
+            moveMag = 0.0
+
+            # need to recalculate hypsquared here so optional parameter to ease calculation
+            if isinstance(self.links[l],physicalNodeLink):
+                moveMag += self.links[l].chargedParticleForce(hypSq)
+
+            if isinstance(self.links[l],SpringLink):
+                #print("spring strength applied")
+                moveMag += self.links[l].getSpringStrength(hyp)
 
 
-            #need to recalculate hypsquared here so optional parameter to ease calculation
-            chargemul = self.links[l].chargedParticleForce(hyp) * strength
+
+            #springForce = self.links[l]
+
+
+
+
+            #print("cosang: {} sinang: {} chargeMul: {} ang: {}".format(coscomp*180/math.pi,sincomp*180/math.pi,chargemul,ang*180/math.pi))
+
 
             #print("N1:{},N2:{} ".format(self.links[l].n1.moveVec,self.links[l].n2.moveVec))
 
-            self.links[l].n1.moveVec.x += chargemul / self.links[l].n1.weight * math.acos(cosang)
-            self.links[l].n1.moveVec.y += chargemul / self.links[l].n1.weight * math.asin(sinang)
+            self.links[l].n1.moveVec.x += -moveMag * strength / self.links[l].n1.weight * math.cos(ang)
+            self.links[l].n1.moveVec.y += -moveMag * strength / self.links[l].n1.weight * math.sin(ang)
 
-            self.links[l].n2.moveVec.x += -chargemul / self.links[l].n2.weight * math.acos(cosang)
-            self.links[l].n2.moveVec.y += -chargemul / self.links[l].n2.weight * math.asin(sinang)
-
+            self.links[l].n2.moveVec.x += moveMag * strength / self.links[l].n2.weight * math.cos(ang)
+            self.links[l].n2.moveVec.y += moveMag * strength / self.links[l].n2.weight * math.sin(ang)
 
 
     def ApplyVectors(self):
@@ -125,43 +274,27 @@ class NodeWrangler:
 
         self.resetMoveVectors()
 
-
-
     def dispPlot(self):
-
-        #n = numpy.
-        #frame = pplot.scatter(200,200)
-
-
-        #numpy.random.seed(19680801)
-        #data = numpy.random.randn(2, 100)
-
-        xdata = [self.nodes[n].x for n in self.nodes]
-        ydata = [self.nodes[n].y for n in self.nodes]
-
-        xdataOrig = [self._originalNodes[n].x for n in self._originalNodes]
-        ydataOrig = [self._originalNodes[n].y for n in self._originalNodes]
-
-
-        data = numpy.array([xdata,ydata])
-
-
-        #configures a grid of plots
-        #fig, axs = pplot.subplots(2, 2, figsize=(5, 5)
-
-        #
-
-        #axs[0, 0].hist(data[0])
+        data = self.genQuiverGraphData()
         pplot.scatter(data[0], data[1])
-        #axs[0, 1].plot(data[0], data[1])
-        #axs[1, 1].hist2d(data[0], data[1])
-
         pplot.show()
 
+    def dispQuiver(self):
+        data = self.genQuiverGraphData()
+        pplot.quiver(data[0], data[1], data[2], data[3], label = "This label")
+        pplot.show()
 
-    def dispStreamLineGraph(self):
+    def assignMoveVecsToDisplacementFromOrig(self):
+
+        self.ApplyVectors()
+
+        for n in self.nodes:
+            print("n={}".format(n))
+
+            self.nodes[n].moveVec = Pos2D((self.nodes[n].x-self._originalNodes[n].x, self.nodes[n].y-self._originalNodes[n].y))
 
 
+    def genQuiverGraphData(self):
         xdata = [self.nodes[n].x for n in self.nodes]
         ydata = [self.nodes[n].y for n in self.nodes]
 
@@ -170,23 +303,50 @@ class NodeWrangler:
 
         data = numpy.array([xdata, ydata,xmoveData,ymoveData])
 
-
-        #X, Y, U, V = zip(data)
-
-
         print("some graph data:\n\t{},{} pieces of data in xdata,ydata\n\t{},{} pieces of data in xmovedata,ymovedata".format(len(xdata),len(ydata),len(xmoveData),len(ymoveData)))
 
-        #posData = numpy.array([xdata,ydata])
-        #velData = numpy.array([xmoveData, ymoveData])
+        #p = pplot.quiver(data[0], data[1], data[2], data[3])
+        return data
 
-        pplot.quiver(data[0], data[1], data[2], data[3])
-        pplot.show()
+class Plotter(object):
+    def __init__(self, nwo: NodeWrangler):
+        self.can = gfx.GraphWin("WorldGen", 1000, 800)
 
-class Pos2D:
+        # can.mainloop()
+
+        nodestoplot = {k: [v.pos,v.weight] for k, v in nwo.nodes.items()}
+        self.plotPoints(nodestoplot, 20)
+
+        #print(nwo.nodes.keys())
+
+        linestoplot = {k: [v.n1, v.n2] for k, v in nwo.links.items()}
+        self.plotLines(linestoplot, 20)
+
+        self.can.getMouse()
+
+    def plotPoints(self,point_id_dict: dict, scale= 1.0):
+
+        for n in point_id_dict:
+            c = gfx.Circle(center=gfx.Point(scale*point_id_dict[n][0][0]+self.can.width//2, scale*point_id_dict[n][0][1]+self.can.height//2), radius=scale/5*point_id_dict[n][1])
+            c.draw(self.can)
+
+    def plotLines(self, line_id_dict: dict, scale=1.0):
+
+        for l in line_id_dict:
+            #print(point_id_dict[0][0])
+            line = gfx.Line(gfx.Point(scale*line_id_dict[l][0][0]+self.can.width//2, scale*line_id_dict[l][0][1]+self.can.height//2),gfx.Point(scale*line_id_dict[l][1][0]+self.can.width//2, scale*line_id_dict[l][1][1]+self.can.height//2))
+
+            line.draw(self.can)
+
+
+#Pos2D class Collection
+class Pos2D(object):
 
     def __init__(self,pos):
         #self.pos = None
         self.__pos = None
+
+        #This is a property and sets __pos
         self.pos = pos
 
             #print("Instantiating Pos2D - self.pos type:{}".format(str(type(self.pos))))
@@ -274,8 +434,8 @@ class PhysicalNode(Node):
     def __str(self):
         return "{}, moveVec: {}".format(str(super), self.moveVec)
 
-
-class nodeLink():
+#NodeLink class Collection
+class nodeLink(object):
 
     def __init__(self,n1,n2):
         self.n1, self.n2 = n1, n2
@@ -297,18 +457,37 @@ class nodeLink():
     def deltaY(self):
         return self.n2.y - self.n1.y
 
-
-
-
 class physicalNodeLink(nodeLink):
-    def __init__(self,n1, n2, force=1.0):
+    def __init__(self,n1, n2):
+
         super().__init__(n1, n2)
 
-    def chargedParticleForce(self, lensquared):
-        if type(lensquared)==float:
-            return (self.n1.weight * self.n2.weight) / lensquared
+    def chargedParticleForce(self, lenSquared:float = None):
+
+        if lenSquared is not None:
+            return (self.n1.weight * self.n2.weight) / lenSquared
         else:
-            return ValueError
+            return (self.n1.weight * self.n2.weight) / self.lengthSquared()
+
+class SpringLink(physicalNodeLink):
+
+    def __init__(self,n1:PhysicalNode,n2:PhysicalNode,desiredSpringLength:float,springStrength:float):
+        super().__init__(n1,n2)
+        self.desiredLength = desiredSpringLength
+        self.springStrength = springStrength
+
+    def springDisplacement(self, length:float = None):
+        if length is None:
+            return self.length() - self.desiredLength
+        else:
+            return self.desiredLength - length
+
+    def getSpringStrength(self,length:float=None):
+        return self.springDisplacement(length) * self.springStrength
+
+
+
+
 
 #@classmethod
 def genRandInsideUnitCircle(radius=1.0):
@@ -335,39 +514,47 @@ def polynomialPotential(value,firstDegreeFactor=0.0,secondDegreeFactor=0.0,third
 
     return retval
 
-
-
-
-
-def testGraph(testType):
+def testGraph():
+    print(pplot.get_backend())
 
     nw = NodeWrangler()
-    nw.genNodes(40,10)
-
-    origionalNodes = copy.deepcopy(nw.nodes)
-
-    nw.genAllPhysicalLinks(1.0)
-    print(nw)
-    #nw.CalculateForceVectors(1.0)
-    #nw.ApplyVectors()
-
-    nw.CalculateForceVectors(10.0)
-
-    #nw.iterativeCalculateForceVectors(1,0.01,2.00)
-    #nw.iterativeCalculateForceVectors(1,0.5,0.01)
+    nw.genNodes(50, 10)
+    nw.genAllChargedLinks(1.0)
 
     #print(nw)
 
-    nw.dispStreamLineGraph()
+    #nw.CalculateForceVectors(1.0)
+    #nw.ApplyVectors()
+
+
+    #nw.CalculateForceVectors(10.0)
 
 
 
 
-print("Some trig testing:")
-n = 100
 
-for i in range(n):
-    
-    
+    nw.genClosestNSpringLinks(1)
 
 
+    nw.iterativeCalculateForceVectors(10, 0.0, 0.5)
+    nw.iterativeCalculateForceVectors(10, 0.5, 0.0)
+
+
+    nw.removeAllLinksOfType(physicalNodeLink)
+
+    print("there are {} links".format(len(nw.links)))
+
+    print(nw.get_unlinked_nodes())
+
+    #nw.assignMoveVecsToDisplacementFromOrig()
+    #nw.dispQuiver()
+    #nw.resetMoveVectors()
+
+    Plotter(nw)
+
+    #nw.dispQuiver()
+    #nw.fig.show()
+
+
+
+testGraph()

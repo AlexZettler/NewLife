@@ -10,11 +10,6 @@ import numpy
 
 import SomeExternalLibs.graphics as gfx
 
-
-#from sortedcontainers import SortedDict
-
-
-
 class NodeWrangler(object):
     def __init__(self):
 
@@ -36,7 +31,7 @@ class NodeWrangler(object):
 
     def genAllChargedLinks(self, strength:float):
 
-        #This guy can be optimized eventually by making a todo list that is iterated through and have values poped as the list is iterated through.
+        #todo This guy can be optimized eventually by making a list that is iterated through and have values poped as the list is iterated through.
 
 
         completedkeys = []
@@ -87,7 +82,7 @@ class NodeWrangler(object):
         indexPicker = 0
         selection=0
 
-        while indexPicker <= len(self.links)-1-selection:
+        while indexPicker <= len(self.links)-1:
 
             selection = iternum - indexPicker
 
@@ -103,11 +98,13 @@ class NodeWrangler(object):
                 indexPicker+=1
             iternum+=1
 
+    #Returns a list of all nodes that are not linked
     def get_unlinked_nodes(self):
         return [n for n in self.nodes if len(self.nodes[n].links) == 0]
 
-
-
+    # Returns a list of the number of links of each node
+    def get_node_links(self):
+        return [len(self.nodes[n].links) for n in self.nodes]
 
     def genClosestNSpringLinks(self,N):
         '''
@@ -148,24 +145,27 @@ class NodeWrangler(object):
 
             LowestVal = None
             LowestKeys = []
-            
-            for key in lenDict:
-                if len(LowestKeys) == N:
-                    break
 
-                if LowestVal is None:
-                    LowestVal = lenDict[key]
 
-                elif key not in LowestKeys:
-                    if lenDict[key] < LowestVal:
-                        LowestVal = lenDict[key]
-                        LowestKeys.append(key)
+            while len(LowestKeys) != N:
 
+                for key in lenDict:
+
+                    if LowestVal is None:
+                        LowestVal = key
+
+                    elif key not in LowestKeys:
+                        if lenDict[key] < lenDict[LowestVal]:
+                            LowestVal = key
+                LowestKeys.append(LowestVal)
 
             print("{} keys were selected at node {}".format(len(LowestKeys),n))
             for k in LowestKeys:
 
-                print("The selected key was {} with a squared length of {}\n".format(k,lenDict[k]))
+                print("The selected key was {}, connected between {} and {} with a squared length of {}\n".format(k,self.links[k].n1,self.links[k].n2,lenDict[k]))
+                #self.links.delVal(k)
+
+                #temp = self.links[k]
 
                 self.links[k] = SpringLink(self.links[k].n1, self.links[k].n2, desiredSpringLength=1.0, springStrength=1.0)
 
@@ -210,12 +210,12 @@ class NodeWrangler(object):
             m=(endStr-startStr)/iterations
             b=startStr
 
-            self.CalculateForceVectors(m*x+b)
+            self.CalculateForceVectors(m*x+b,m*x+b)
             #print("m,x,b = {},{},{}".format(m,x,b))
             self.ApplyVectors()
 
 
-    def CalculateForceVectors(self, strength):
+    def CalculateForceVectors(self, charge_strength, spring_strength):
         print("Iterating through vectors for force calculation")
 
         for l in self.links:
@@ -235,11 +235,11 @@ class NodeWrangler(object):
 
             # need to recalculate hypsquared here so optional parameter to ease calculation
             if isinstance(self.links[l],physicalNodeLink):
-                moveMag += self.links[l].chargedParticleForce(hypSq)
+                moveMag += charge_strength * self.links[l].chargedParticleForce(hypSq)
 
             if isinstance(self.links[l],SpringLink):
                 #print("spring strength applied")
-                moveMag += self.links[l].getSpringStrength(hyp)
+                moveMag += spring_strength * self.links[l].getSpringStrength(hyp)
 
 
 
@@ -253,11 +253,11 @@ class NodeWrangler(object):
 
             #print("N1:{},N2:{} ".format(self.links[l].n1.moveVec,self.links[l].n2.moveVec))
 
-            self.links[l].n1.moveVec.x += -moveMag * strength / self.links[l].n1.weight * math.cos(ang)
-            self.links[l].n1.moveVec.y += -moveMag * strength / self.links[l].n1.weight * math.sin(ang)
+            self.links[l].n1.moveVec.x += -moveMag / self.links[l].n1.weight * math.cos(ang)
+            self.links[l].n1.moveVec.y += -moveMag / self.links[l].n1.weight * math.sin(ang)
 
-            self.links[l].n2.moveVec.x += moveMag * strength / self.links[l].n2.weight * math.cos(ang)
-            self.links[l].n2.moveVec.y += moveMag * strength / self.links[l].n2.weight * math.sin(ang)
+            self.links[l].n2.moveVec.x += moveMag / self.links[l].n2.weight * math.cos(ang)
+            self.links[l].n2.moveVec.y += moveMag / self.links[l].n2.weight * math.sin(ang)
 
 
     def ApplyVectors(self):
@@ -518,7 +518,7 @@ def testGraph():
     print(pplot.get_backend())
 
     nw = NodeWrangler()
-    nw.genNodes(50, 10)
+    nw.genNodes(5, 10)
     nw.genAllChargedLinks(1.0)
 
     #print(nw)
@@ -536,8 +536,8 @@ def testGraph():
     nw.genClosestNSpringLinks(1)
 
 
-    nw.iterativeCalculateForceVectors(10, 0.0, 0.5)
-    nw.iterativeCalculateForceVectors(10, 0.5, 0.0)
+    #nw.iterativeCalculateForceVectors(10, 0.0, 0.5)
+    #nw.iterativeCalculateForceVectors(10, 0.5, 0.0)
 
 
     nw.removeAllLinksOfType(physicalNodeLink)
@@ -545,7 +545,7 @@ def testGraph():
     print("there are {} links".format(len(nw.links)))
 
     print(nw.get_unlinked_nodes())
-
+    print(nw.get_node_links())
     #nw.assignMoveVecsToDisplacementFromOrig()
     #nw.dispQuiver()
     #nw.resetMoveVectors()
@@ -557,4 +557,8 @@ def testGraph():
 
 
 
-testGraph()
+
+
+
+if __name__ == "__main__":
+    testGraph()

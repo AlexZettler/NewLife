@@ -1,6 +1,5 @@
+#A dictionary object that allows for a value to be stored and returns it's key.
 
-
-#A dictionary extension that allows for a value to be stored and returns it's key.
 class IDtracker(dict):
 
     def __init__(self,greatestKey=0):
@@ -33,28 +32,6 @@ class IDtracker(dict):
         else:
             raise ValueError
 
-    '''
-    def __getitem__(self, key):
-
-        if isinstance(key, slice):
-            print("You should be using the method: ")
-            return self.sliceMe(key)
-
-
-        if isinstance(key, int):
-            # Handle int indices
-            if key in self:
-                return self[key]
-
-            else:
-                print("lookup is {}".format(len(self.d)))
-                print(str(key))
-                raise KeyError
-
-        else:
-            raise KeyError
-    '''
-
     def sliceMe(self,*args):
 
         # lets get slicing
@@ -62,23 +39,3 @@ class IDtracker(dict):
 
         if type(args[0])==slice:
             print("start: {},stop: {}".format(args[0].start,args[0].stop))
-
-
-    #def __len__(self):
-        #return len(self.d.keys())
-
-'''
-def test():
-
-    idT= IDtracker()
-
-    id = idT.StoreVal(10)
-    print(id,idT[id])
-
-    id = idT.StoreVal(15)
-    print(id,idT[id])
-
-
-if __name__ == "__main__":
-    test()
-'''

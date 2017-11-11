@@ -2,7 +2,7 @@ import math
 import random
 import copy
 
-import IDtrack
+import NEWLIFE_IDtrack as IDtrack
 
 import matplotlib.pyplot as pplot
 import matplotlib.backends.backend_qt5agg

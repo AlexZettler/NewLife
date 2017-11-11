@@ -23,13 +23,15 @@ class NodeWrangler(object):
     def __str__(self):
         return "\n".join(str(self.nodes[n]) for n in self.nodes)
 
-    def genNodes(self,n:int,radius:float):
+    def gen_nodes(self, n:int, radius:float):
         for i in range(n):
-            rn = genRandInsideUnitCircle(radius)
+            rn = gen_rand_pos_in_unit_circle(radius)
             self.nodes.StoreVal(PhysicalNode(rn, 1.0, None))
         self._originalNodes = copy.deepcopy(self.nodes)
 
-    def genAllChargedLinks(self, strength:float):
+
+    #
+    def gen_physical_links_between_all(self, strength:float):
 
         #todo This guy can be optimized eventually by making a list that is iterated through and have values poped as the list is iterated through.
 
@@ -43,14 +45,14 @@ class NodeWrangler(object):
 
             for connection in connectToList:
 
-                pl = physicalNodeLink(self.nodes[key],self.nodes[connection])
+                pl = PhysicalNodeLink(self.nodes[key], self.nodes[connection])
 
                 linkkey = self.links.StoreVal(pl)
 
                 self.nodes[key].links.append(linkkey)
                 self.nodes[connection].links.append(linkkey)
 
-    def removeAllLinksOfInstance(self, instanceType: type):
+    def remove_links_of_instance(self, instanceType: type):
 
         #literally black magic. Do not touch!
 
@@ -73,7 +75,7 @@ class NodeWrangler(object):
                 indexPicker+=1
             iternum+=1
 
-    def removeAllLinksOfType(self, instanceType: type):
+    def remove_links_of_type(self, instanceType: type):
 
         #Also Black Magic
 
@@ -106,7 +108,7 @@ class NodeWrangler(object):
     def get_node_links(self):
         return [len(self.nodes[n].links) for n in self.nodes]
 
-    def genClosestNSpringLinks(self,N):
+    def gen_closest_n_spring_links(self, N):
         '''
         try:
 
@@ -172,9 +174,7 @@ class NodeWrangler(object):
                 #self.nodes[n].links.append()
 
     @classmethod
-    def angFromSinCos(self, sinang:float, cosang:float):
-
-        #sinang,cosang = math.sin(sincomp),math.cos(coscomp)
+    def ang_from_sin_cos_ratios(self, sinang:float, cosang:float):
 
         # Quadrant breakup
         #Q1
@@ -198,24 +198,30 @@ class NodeWrangler(object):
             print("*Error with values of sin and cos components: {} {}*".format(sinang,cosang))
             raise ValueError
 
-    def resetMoveVectors(self):
+    def reset_move_vectors(self):
         for n in self.nodes:
-            #print("Node: {}".format(self.nodes[n].id))
-            #print("movVec: {}".format(type(self.nodes[n].moveVec)))
-            self.nodes[n].moveVec = Pos2D((0, 0))
+            self.nodes[n].moveVec = Pos2D((0.0, 0.0))
 
-    def iterativeCalculateForceVectors(self,iterations:int,startStr:float,endStr:float):
+
+    def iterative_calculate_force_vectors(self, iterations:int, startStr:float, endStr:float):
+        '''
+        Iteratively applies forces to nodes based on connections
+
+        :param iterations:
+        :param startStr: strength of force application at the start of the iteration
+        :param endStr: strength of force application at the end of the iteration
+        :return:
+        '''
 
         for x in range(iterations):
             m=(endStr-startStr)/iterations
             b=startStr
 
-            self.CalculateForceVectors(m*x+b,m*x+b)
-            #print("m,x,b = {},{},{}".format(m,x,b))
-            self.ApplyVectors()
+            self.calc_force_vectors(m * x + b, m * x + b)
+            self.apply_vectors()
 
 
-    def CalculateForceVectors(self, charge_strength, spring_strength):
+    def calc_force_vectors(self, charge_strength, spring_strength):
         print("Iterating through vectors for force calculation")
 
         for l in self.links:
@@ -229,28 +235,19 @@ class NodeWrangler(object):
             coscomp = self.links[l].deltaX / hyp
             #print(sincomp, coscomp)
 
-            ang = NodeWrangler.angFromSinCos(sincomp, coscomp)
+            ang = NodeWrangler.ang_from_sin_cos_ratios(sincomp, coscomp)
 
             moveMag = 0.0
 
             # need to recalculate hypsquared here so optional parameter to ease calculation
-            if isinstance(self.links[l],physicalNodeLink):
-                moveMag += charge_strength * self.links[l].chargedParticleForce(hypSq)
+            if isinstance(self.links[l], PhysicalNodeLink):
+                moveMag += charge_strength * self.links[l].charged_particle_force(hypSq)
 
             if isinstance(self.links[l],SpringLink):
                 #print("spring strength applied")
-                moveMag += spring_strength * self.links[l].getSpringStrength(hyp)
-
-
-
-            #springForce = self.links[l]
-
-
-
+                moveMag += spring_strength * self.links[l].get_spring_strength(hyp)
 
             #print("cosang: {} sinang: {} chargeMul: {} ang: {}".format(coscomp*180/math.pi,sincomp*180/math.pi,chargemul,ang*180/math.pi))
-
-
             #print("N1:{},N2:{} ".format(self.links[l].n1.moveVec,self.links[l].n2.moveVec))
 
             self.links[l].n1.moveVec.x += -moveMag / self.links[l].n1.weight * math.cos(ang)
@@ -260,7 +257,7 @@ class NodeWrangler(object):
             self.links[l].n2.moveVec.y += moveMag / self.links[l].n2.weight * math.sin(ang)
 
 
-    def ApplyVectors(self):
+    def apply_vectors(self):
 
         #Apply the moveVectors
         for n in self.nodes:
@@ -272,27 +269,24 @@ class NodeWrangler(object):
                 self.nodes[n].x += self.nodes[n].moveVec.x
                 self.nodes[n].y += self.nodes[n].moveVec.y
 
-        self.resetMoveVectors()
+        self.reset_move_vectors()
 
-    def dispPlot(self):
+    def disp_plot(self):
         data = self.genQuiverGraphData()
         pplot.scatter(data[0], data[1])
         pplot.show()
 
-    def dispQuiver(self):
+    def disp_quiver(self):
         data = self.genQuiverGraphData()
         pplot.quiver(data[0], data[1], data[2], data[3], label = "This label")
         pplot.show()
 
-    def assignMoveVecsToDisplacementFromOrig(self):
+    def assign_moveVec_to_displacement_from_origional_position(self):
 
-        self.ApplyVectors()
-
+        self.apply_vectors()
         for n in self.nodes:
             print("n={}".format(n))
-
             self.nodes[n].moveVec = Pos2D((self.nodes[n].x-self._originalNodes[n].x, self.nodes[n].y-self._originalNodes[n].y))
-
 
     def genQuiverGraphData(self):
         xdata = [self.nodes[n].x for n in self.nodes]
@@ -315,22 +309,22 @@ class Plotter(object):
         # can.mainloop()
 
         nodestoplot = {k: [v.pos,v.weight] for k, v in nwo.nodes.items()}
-        self.plotPoints(nodestoplot, 20)
+        self.plot_points(nodestoplot, 20)
 
         #print(nwo.nodes.keys())
 
         linestoplot = {k: [v.n1, v.n2] for k, v in nwo.links.items()}
-        self.plotLines(linestoplot, 20)
+        self.plot_lines(linestoplot, 20)
 
         self.can.getMouse()
 
-    def plotPoints(self,point_id_dict: dict, scale= 1.0):
+    def plot_points(self, point_id_dict: dict, scale= 1.0):
 
         for n in point_id_dict:
             c = gfx.Circle(center=gfx.Point(scale*point_id_dict[n][0][0]+self.can.width//2, scale*point_id_dict[n][0][1]+self.can.height//2), radius=scale/5*point_id_dict[n][1])
             c.draw(self.can)
 
-    def plotLines(self, line_id_dict: dict, scale=1.0):
+    def plot_lines(self, line_id_dict: dict, scale=1.0):
 
         for l in line_id_dict:
             #print(point_id_dict[0][0])
@@ -417,10 +411,10 @@ class Node(Pos2D):
         self.links = []
 
     def __str__(self):
-        if type(id) != None:
-            return "id: {}, x: {}, y: {}".format(self.id,self.x,self.y)
-        else:
+        if type(id) is None:
             return str(super())
+        else:
+            return "id: {}, x: {}, y: {}".format(self.id, self.x, self.y)
 
 class PhysicalNode(Node):
 
@@ -457,40 +451,36 @@ class nodeLink(object):
     def deltaY(self):
         return self.n2.y - self.n1.y
 
-class physicalNodeLink(nodeLink):
+class PhysicalNodeLink(nodeLink):
     def __init__(self,n1, n2):
 
         super().__init__(n1, n2)
 
-    def chargedParticleForce(self, lenSquared:float = None):
+    def charged_particle_force(self, lenSquared:float = None):
 
         if lenSquared is not None:
             return (self.n1.weight * self.n2.weight) / lenSquared
         else:
             return (self.n1.weight * self.n2.weight) / self.lengthSquared()
 
-class SpringLink(physicalNodeLink):
+class SpringLink(PhysicalNodeLink):
 
     def __init__(self,n1:PhysicalNode,n2:PhysicalNode,desiredSpringLength:float,springStrength:float):
         super().__init__(n1,n2)
         self.desiredLength = desiredSpringLength
         self.springStrength = springStrength
 
-    def springDisplacement(self, length:float = None):
+    def spring_displacement(self, length:float = None):
         if length is None:
             return self.length() - self.desiredLength
         else:
             return self.desiredLength - length
 
-    def getSpringStrength(self,length:float=None):
-        return self.springDisplacement(length) * self.springStrength
+    def get_spring_strength(self, length:float=None):
+        return self.spring_displacement(length) * self.springStrength
 
 
-
-
-
-#@classmethod
-def genRandInsideUnitCircle(radius=1.0):
+def gen_rand_pos_in_unit_circle(radius=1.0):
     x = (random.random() - 0.5) * radius
     y = (random.random() - 0.5) * radius
 
@@ -500,8 +490,9 @@ def genRandInsideUnitCircle(radius=1.0):
 
     return x, y
 
-def polynomialPotential(value,firstDegreeFactor=0.0,secondDegreeFactor=0.0,thirdDegreeFactor=0.0):
-    retval = 0.0
+def polynomialPotential(value,bias:float = 0.0,firstDegreeFactor:float=0.0,secondDegreeFactor:float=0.0,thirdDegreeFactor:float=0.0):
+
+    retval = bias
 
     if type(firstDegreeFactor) == float and firstDegreeFactor != 0.0:
         retval += firstDegreeFactor * value
@@ -514,51 +505,40 @@ def polynomialPotential(value,firstDegreeFactor=0.0,secondDegreeFactor=0.0,third
 
     return retval
 
-def testGraph():
-    print(pplot.get_backend())
+def test_graph():
 
     nw = NodeWrangler()
-    nw.genNodes(5, 10)
-    nw.genAllChargedLinks(1.0)
+    nw.gen_nodes(5, 10)
+    nw.gen_physical_links_between_all(1.0)
 
-    #print(nw)
+    nw.gen_closest_n_spring_links(1)
 
-    #nw.CalculateForceVectors(1.0)
-    #nw.ApplyVectors()
+    #nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
+    #nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
 
-
-    #nw.CalculateForceVectors(10.0)
-
-
-
-
-
-    nw.genClosestNSpringLinks(1)
-
-
-    #nw.iterativeCalculateForceVectors(10, 0.0, 0.5)
-    #nw.iterativeCalculateForceVectors(10, 0.5, 0.0)
-
-
-    nw.removeAllLinksOfType(physicalNodeLink)
+    nw.remove_links_of_type(PhysicalNodeLink)
 
     print("there are {} links".format(len(nw.links)))
 
     print(nw.get_unlinked_nodes())
     print(nw.get_node_links())
-    #nw.assignMoveVecsToDisplacementFromOrig()
-    #nw.dispQuiver()
-    #nw.resetMoveVectors()
 
     Plotter(nw)
 
-    #nw.dispQuiver()
-    #nw.fig.show()
+def PlotQuiver():
+    print(pplot.get_backend())
+
+    nw = NodeWrangler()
+    nw.gen_nodes(5, 10)
+    nw.gen_physical_links_between_all(1.0)
+
+    nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
+    nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
 
 
-
-
-
+    nw.assign_moveVec_to_displacement_from_origional_position()
+    nw.disp_quiver()
+    nw.reset_move_vectors()
 
 if __name__ == "__main__":
-    testGraph()
+    test_graph()

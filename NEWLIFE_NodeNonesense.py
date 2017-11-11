@@ -109,57 +109,42 @@ class NodeWrangler(object):
         return [len(self.nodes[n].links) for n in self.nodes]
 
     def gen_closest_n_spring_links(self, N):
-        '''
-        try:
 
-            from sortedcollections import sortedDict
-
-            for n in self.nodes:
-
-                print("n={}/{}\n".format(n,len(self.nodes)-1))
-                lenDict = {}
-                for l in self.nodes[n].links:
-                    lenDict[l]= self.links[l].length()
-
-                #k: self.links[self.nodes[n].links[k]].length()for k in
-                sortedShortestKeys = SortedDict(lenDict).keys()[0:N]
-
-            print("linksd len is {}".format(len(linksd)))
-
-            #lengths="\n\t{}".join("" for j in linksd).format([lenDict[j] for j in linksd])
-
-
-            print("there are {} links their lengths are :".format(len(sortedShortestKeys)))#,lengths))
-            for i in sortedShortestKeys:
-                print(i,", ",lenDict[i])
-
-
-
-        except:
-        '''
         for n in self.nodes:
 
             print("n={}/{}total nodes. There are {} links".format(n, len(self.nodes)-1,len(self.nodes[n].links)))
 
+
+            #creates a dictionary of connections of the current node as LinkKey: LinkLength
             lenDict = {k:self.links[k].lengthSquared() for k in self.nodes[n].links}
 
-            #vallist = [val for val in lenDict.values()]
+            #LowestVal is the current lowest length found in the iteration
+            lowest_key = None
 
-            LowestVal = None
+            #LowestKeys is the list of keys that have been determined to be the lowest
             LowestKeys = []
 
-
+            #Loop until the correct number of lengths have been found
             while len(LowestKeys) != N:
 
+                #Iterate through the keys of the node links
                 for key in lenDict:
 
-                    if LowestVal is None:
-                        LowestVal = key
+                    #Assigns the lowest val upon the first iteration
+                    if lowest_key is None:
+                        lowest_key = key
 
-                    elif key not in LowestKeys:
-                        if lenDict[key] < lenDict[LowestVal]:
-                            LowestVal = key
-                LowestKeys.append(LowestVal)
+                    #Check that
+                    elif lenDict[key] < lenDict[lowest_key]:
+
+                        #Check that current key hasn't been used as a previous lowest
+                        if key not in LowestKeys:
+
+                            #assign a new lowest key
+                            lowest_key = key
+
+                #After the entire list has been iterated over, add the lowest value to the list of lowest keys
+                LowestKeys.append(lowest_key)
 
             print("{} keys were selected at node {}".format(len(LowestKeys),n))
             for k in LowestKeys:
@@ -256,7 +241,6 @@ class NodeWrangler(object):
             self.links[l].n2.moveVec.x += moveMag / self.links[l].n2.weight * math.cos(ang)
             self.links[l].n2.moveVec.y += moveMag / self.links[l].n2.weight * math.sin(ang)
 
-
     def apply_vectors(self):
 
         #Apply the moveVectors
@@ -272,12 +256,12 @@ class NodeWrangler(object):
         self.reset_move_vectors()
 
     def disp_plot(self):
-        data = self.genQuiverGraphData()
+        data = self.gen_quiver_graph_data()
         pplot.scatter(data[0], data[1])
         pplot.show()
 
     def disp_quiver(self):
-        data = self.genQuiverGraphData()
+        data = self.gen_quiver_graph_data()
         pplot.quiver(data[0], data[1], data[2], data[3], label = "This label")
         pplot.show()
 
@@ -288,7 +272,7 @@ class NodeWrangler(object):
             print("n={}".format(n))
             self.nodes[n].moveVec = Pos2D((self.nodes[n].x-self._originalNodes[n].x, self.nodes[n].y-self._originalNodes[n].y))
 
-    def genQuiverGraphData(self):
+    def gen_quiver_graph_data(self):
         xdata = [self.nodes[n].x for n in self.nodes]
         ydata = [self.nodes[n].y for n in self.nodes]
 
@@ -525,7 +509,7 @@ def test_graph():
 
     Plotter(nw)
 
-def PlotQuiver():
+def plot_quiver():
     print(pplot.get_backend())
 
     nw = NodeWrangler()
@@ -542,3 +526,51 @@ def PlotQuiver():
 
 if __name__ == "__main__":
     test_graph()
+
+
+
+"""
+hi reddit.
+
+The bit I am having trouble with is on line 111: gen_closest_n_spring_links()
+
+The code based on the debugger seems to be finding the correct link.
+
+But it is not creating the link between the nodes it selects
+
+Furthermore, the first node never generates a link, and the second only sometimes does
+
+The later links also generate more than a single link.
+
+I am overlooking something HUGE but can not put my finger on it. This has taken me the better part of the afternoon and I would really appreciate another pair of eyes.
+
+General code review is also welcomed.
+
+
+Here is the output I am getting:
+    
+    n=0/4total nodes. There are 4 links
+    1 keys were selected at node 0
+    The selected key was 3, connected between id: 0, x: 3.4777810915689225, y: -2.9876675771294403 and id: 4, x: 2.7149802188741834, y: -2.189168706378423 with a squared length of 1.2194656179745056
+    
+    n=1/4total nodes. There are 4 links
+    1 keys were selected at node 1
+    The selected key was 5, connected between id: 1, x: -2.815756580592086, y: 3.398505504019141 and id: 3, x: -0.7898316784048398, y: 3.439405419356868 with a squared length of 4.106044512377037
+    
+    n=2/4total nodes. There are 4 links
+    1 keys were selected at node 2
+    The selected key was 4, connected between id: 1, x: -2.815756580592086, y: 3.398505504019141 and id: 2, x: -3.9549320995259674, y: -1.7672549140054683 with a squared length of 27.982801559368063
+    
+    n=3/4total nodes. There are 4 links
+    1 keys were selected at node 3
+    The selected key was 5, connected between id: 1, x: -2.815756580592086, y: 3.398505504019141 and id: 3, x: -0.7898316784048398, y: 3.439405419356868 with a squared length of 4.106044512377037
+    
+    n=4/4total nodes. There are 4 links
+    1 keys were selected at node 4
+    The selected key was 3, connected between id: 0, x: 3.4777810915689225, y: -2.9876675771294403 and id: 4, x: 2.7149802188741834, y: -2.189168706378423 with a squared length of 1.2194656179745056
+    
+    there are 3 links
+    [0, 1]
+    [0, 0, 2, 2, 2]
+
+"""

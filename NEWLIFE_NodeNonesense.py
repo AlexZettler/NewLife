@@ -18,7 +18,7 @@ class NodeWrangler(object):
 
         self._originalNodes = None
 
-        self.fig = None
+        #self.fig = None
 
     def __str__(self):
         return "\n".join(str(self.nodes[n]) for n in self.nodes)
@@ -52,53 +52,23 @@ class NodeWrangler(object):
                 self.nodes[key].links.append(linkkey)
                 self.nodes[connection].links.append(linkkey)
 
-    def remove_links_of_instance(self, instanceType: type):
 
-        #literally black magic. Do not touch!
-
-        l = list(self.links.keys())
-        iternum = 0
-        indexPicker = 0
-        selection=0
-
-        while indexPicker <= len(self.links)-1-selection:
-            selection = iternum-indexPicker
-            if isinstance(self.links[iternum], instanceType):
-
-                #print(self.links[selection].n1.links)
-                self.links[selection].n1.links.pop(self.links[selection].n1.links.index(selection))
-                self.links[selection].n2.links.pop(self.links[selection].n2.links.index(selection))
-
-                self.links.delVal(selection)
-
-            else:
-                indexPicker+=1
-            iternum+=1
 
     def remove_links_of_type(self, instanceType: type):
+        keysToRemove=[]
 
-        #Also Black Magic
-
-        l = list(self.links.keys())
-        iternum = 0
-        indexPicker = 0
-        selection=0
-
-        while indexPicker <= len(self.links)-1:
-
-            selection = iternum - indexPicker
-
-            if type(self.links[iternum]) == instanceType:
-
+        for l in self.links:
+            if type(self.links[l]) == instanceType:
+                keysToRemove.append(l)
                 #print(self.links[selection].n1.links)
-                self.links[selection].n1.links.pop(self.links[selection].n1.links.index(selection))
-                self.links[selection].n2.links.pop(self.links[selection].n2.links.index(selection))
 
-                self.links.delVal(selection)
+        for l in keysToRemove:
+            self.links[l].n1.links.pop(self.links[l].n1.links.index(l))
+            self.links[l].n2.links.pop(self.links[l].n2.links.index(l))
 
-            else:
-                indexPicker+=1
-            iternum+=1
+            self.links.delVal(l)
+
+
 
     #Returns a list of all nodes that are not linked
     def get_unlinked_nodes(self):
@@ -107,6 +77,49 @@ class NodeWrangler(object):
     # Returns a list of the number of links of each node
     def get_node_links(self):
         return [len(self.nodes[n].links) for n in self.nodes]
+
+    def connect_node_islands(self):
+
+        #todo implerment the rest of the Breadth-first search with islands
+
+        open_set = []
+        closed_set = []
+
+
+        island_counter = 0
+
+        # a list of length[number of nodes] that maps nodes to an island group
+        node_islands = {}
+
+
+
+        for n in self.nodes:
+
+            if n not in closed_set:
+
+                open_set.insert(0, n)
+
+                node_islands[island_counter] = []
+
+                while len(open_set) > 0:
+
+
+                    for l in self.nodes[n].links:
+                        c = l.get_connected(n)
+
+                        if c not in closed_set:
+
+                            open_set.insert(0, c)
+
+
+
+                    closed_set.append(n)
+
+
+                island_counter+=1
+
+
+
 
     def gen_closest_n_spring_links(self, N):
 
@@ -154,7 +167,16 @@ class NodeWrangler(object):
 
                 #temp = self.links[k]
 
-                self.links[k] = SpringLink(self.links[k].n1, self.links[k].n2, desiredSpringLength=1.0, springStrength=1.0)
+
+                #self.links[k].n1.links.pop(self.links[k].n1.links.index(k))
+                #self.links[k].n1.links.pop(self.links[k].n1.links.index(k))
+                #self.links.delVal(k)
+
+
+                #nk = self.links.StoreVal(SpringLink(self.links[k],1.0,1.0))
+
+                if type(self.links[k]) == PhysicalNodeLink:
+                    self.links[k] = SpringLink(self.links[k].n1, self.links[k].n2, desiredSpringLength=1.0, springStrength=1.0)
 
                 #self.nodes[n].links.append()
 
@@ -317,13 +339,58 @@ class Plotter(object):
             line.draw(self.can)
 
 
+class NodeGroup:
+
+    #todo Build this as a group of nodes not connected to the rest of the graph. The probelm will need to be solved by finding nodes closest to center of another NodeGroup and connecting it to the
+
+    def __init__(self,nodeWranglerParent: NodeWrangler, nodeKeys):
+
+        self.nodeKeys = nodeKeys
+
+        self.center = Pos2D((0.0, 0.0))
+
+        for k in self.nodeKeys:
+            self.center += nodeWranglerParent.nodes[k]
+
+        self.center /= float(len(nodeKeys))
+
+
+    def true_closet_connect(self, nodeWranglerParent: NodeWrangler, other_group):
+
+        shortest_link = None
+
+        for n1 in self.nodeKeys:
+
+
+            for n2 in other_group.nodeKeys:
+
+                NL = nodeLink(self.nodeKeys[n2], self.nodeKeys[n1])
+
+                if shortest_link is None:
+                    shortest_link = NL
+
+                elif NL.lengthSquared() < shortest_link.lengthSquared():
+
+                    shortest_link = NL
+
+        NL = SpringLink(NL.n1,NL.n2,1.0,1.0)
+        nodeWranglerParent.links.StoreVal(NL)
+
+        other_group.nodeKeys += self.nodeKeys
+
+
+
+
+
+
+
+
+
 #Pos2D class Collection
 class Pos2D(object):
 
     def __init__(self,pos):
-        #self.pos = None
         self.__pos = None
-
         #This is a property and sets __pos
         self.pos = pos
 
@@ -342,6 +409,25 @@ class Pos2D(object):
     def __setitem__(self, key, value):
         if isinstance(key,int) and key in (0, 1):
             self.__pos[key] = value
+
+    def __add__(self, other):
+        if type(other) == Pos2D:
+            self.pos.x += other.x
+            self.pos.y += other.y
+
+    def __sub__(self, other):
+        if type(other) == Pos2D:
+            self.pos.x -= other.x
+            self.pos.y -= other.y
+
+    def __truediv__(self, other):
+        if type(other) == Pos2D:
+            self.pos.x /= other.x
+            self.pos.y /= other.y
+        elif type(other) == float:
+            self.pos.x /= other
+            self.pos.y /= other
+
 
     @property
     def pos(self):
@@ -400,6 +486,7 @@ class Node(Pos2D):
         else:
             return "id: {}, x: {}, y: {}".format(self.id, self.x, self.y)
 
+
 class PhysicalNode(Node):
 
     def __init__(self, pos, weight, id):
@@ -435,6 +522,14 @@ class nodeLink(object):
     def deltaY(self):
         return self.n2.y - self.n1.y
 
+    def get_connected(self,n):
+        if n == self.n1:
+            return self.n2
+
+        elif n == self.n2:
+            return self.n1
+
+
 class PhysicalNodeLink(nodeLink):
     def __init__(self,n1, n2):
 
@@ -450,7 +545,10 @@ class PhysicalNodeLink(nodeLink):
 class SpringLink(PhysicalNodeLink):
 
     def __init__(self,n1:PhysicalNode,n2:PhysicalNode,desiredSpringLength:float,springStrength:float):
+
+        #if self.n1 is None or self.n2 is None:
         super().__init__(n1,n2)
+
         self.desiredLength = desiredSpringLength
         self.springStrength = springStrength
 
@@ -530,7 +628,7 @@ if __name__ == "__main__":
 
 
 """
-hi reddit.
+hi Reddit.
 
 The bit I am having trouble with is on line 111: gen_closest_n_spring_links()
 
@@ -542,7 +640,7 @@ Furthermore, the first node never generates a link, and the second only sometime
 
 The later links also generate more than a single link.
 
-I am overlooking something HUGE but can not put my finger on it. This has taken me the better part of the afternoon and I would really appreciate another pair of eyes.
+I am overlooking something HUGE but can not put my finger on it. This has taken me the better part of the afternoon and I really appreciate you taking a look :)
 
 General code review is also welcomed.
 

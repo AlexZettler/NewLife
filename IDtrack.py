@@ -1,6 +1,6 @@
 #A dictionary object that allows for a value to be stored and returns it's key.
 
-class IDtracker(dict):
+class id_tracker(dict):
 
     def __init__(self,greatestKey=0):
         super().__init__()
@@ -9,33 +9,42 @@ class IDtracker(dict):
         self.greatestKey = greatestKey
 
     #stores a value at a key and returns the key given
-    def StoreVal(self,val):
+    def store_val(self, val):
+        if isinstance(val, tracked_object):
+            if len(self.unusedKeys) != 0:
+                key = self.unusedKeys.pop(0)
 
-        if len(self.unusedKeys) != 0:
-            key = self.unusedKeys.pop(0)
+            elif len(self.unusedKeys) == 0:
+                key = self.greatestKey
+                self.greatestKey += 1
+            else:
+                raise KeyError
 
-        elif len(self.unusedKeys) == 0:
-            key = self.greatestKey
-            self.greatestKey += 1
+            tracked_object.__init__(val, key)
+
+            self.__setitem__(key,val)
+
+            return key
         else:
-            raise KeyError
-
-        val.id = key
-        self.__setitem__(key,val)
-        return key
+            print("Value was not stored, it was of type {}".format(type(val)))
+            raise ValueError
 
     #removes the value at the given key and configures this key to be reused
-    def delVal(self,key):
+    def del_val(self, key):
+
         if key in self.keys():
             del(self[key])
             self.unusedKeys.append(key)
         else:
             raise ValueError
 
-    def sliceMe(self,*args):
 
-        # lets get slicing
-        #print("start: {}, stop {}".format(key.start, key.stop))
+class tracked_object(object):
+    def __init__(self, id: int):
+        self.__id = id
 
-        if type(args[0])==slice:
-            print("start: {},stop: {}".format(args[0].start,args[0].stop))
+    def get_id(self):
+        return self.__id
+
+    def validate_id(self):
+        return type(self.__id) is int

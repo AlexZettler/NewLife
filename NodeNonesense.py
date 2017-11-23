@@ -1,7 +1,6 @@
 import math
 import random
 import copy
-import abc
 
 import IDtrack as IDtrack
 
@@ -313,7 +312,7 @@ class NodeWrangler(object):
 
         for x in range(iterations):
             m=(endStr-startStr)/iterations
-            b=startStr
+            b = startStr
 
             self.calc_force_vectors(m * x + b, m * x + b)
             self.apply_vectors()
@@ -624,7 +623,6 @@ class NodeLink(IDtrack.tracked_object):
 
         if n1 == n2:
             raise ValueError
-        print("testing")
 
         IDtrack.tracked_object.__init__(self, None)
 
@@ -649,10 +647,6 @@ class NodeLink(IDtrack.tracked_object):
         intn1 = int(self.n1)
         intn2 = int(self.n2)
         intn = int(n)
-
-        # print("Trying to get connection from {}, between {} and {}".format(intn,intn1, intn2))
-
-        # print(intn == intn1)
 
         if intn == intn1:
             retid = self.n2
@@ -686,7 +680,11 @@ class SpringLink(PhysicalNodeLink):
         #if self.n1 is None or self.n2 is None:
         super().__init__(n1,n2, **kwargs)
 
+
+        #desiredLength is the distance that the springlink rests at
         self.desiredLength = float(kwargs["desiredLength"])
+
+        #springStrength is how much force is applied per unit from the spring's rest length
         self.springStrength = float(kwargs["springStrength"])
 
     def spring_displacement(self, length:float = None):
@@ -698,22 +696,6 @@ class SpringLink(PhysicalNodeLink):
     def get_spring_strength(self, length:float=None):
         return self.spring_displacement(length) * self.springStrength
 
-
-def polynomialPotential(value, bias:float = 0.0, firstDegreeFactor:float=0.0, secondDegreeFactor:float=0.0, thirdDegreeFactor:float=0.0):
-    #todo reavaluate this as is not actually used in my implementation and could be done much more cleanly
-
-    retval = bias
-
-    if type(firstDegreeFactor) == float and firstDegreeFactor != 0.0:
-        retval += firstDegreeFactor * value
-
-    if type(secondDegreeFactor) == float and secondDegreeFactor != 0.0:
-        retval += secondDegreeFactor * value ** 2
-
-    if type(thirdDegreeFactor) == float and thirdDegreeFactor != 0.0:
-        retval += thirdDegreeFactor * value ** 3
-
-    return retval
 
 def test_graph():
 
@@ -744,7 +726,7 @@ def plot_quiver():
     nw = NodeWrangler()
 
     nw.gen_nodes_with_radius(100, 10)
-    nw.gen_links_between_all(1.0)
+    nw.gen_links_between_all(nw, NodeLink)
 
     nw.iterative_calculate_force_vectors(10, 0.0, 2.0)
     nw.iterative_calculate_force_vectors(10, 2.0, 0.0)

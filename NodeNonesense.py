@@ -69,7 +69,7 @@ class NodeWrangler(object):
             raise ValueError
 
     @classmethod
-    def ge_links_between_all(self, tracker, link_type, **kwargs):
+    def gen_links_between_all(self, tracker, link_type, **kwargs):
 
         #todo This guy can be optimized eventually by making a list that is iterated through and have values poped as the list is iterated through.
 
@@ -181,7 +181,8 @@ class NodeWrangler(object):
 
 
             # create a lose link to find shortest connections
-            island_wrangler.ge_links_between_all(island_wrangler, NodeLink)
+            island_wrangler.gen_links_between_all(island_wrangler, NodeLink)
+
 
             #connect all closest node island groups
             for island_node in island_wrangler.nodes:
@@ -197,27 +198,12 @@ class NodeWrangler(object):
             # this handles indexing of changed keys
             node_group_mapping = {k: island_wrangler.nodes[k].get_id() for k in island_wrangler.nodes}
 
-            for ng in island_wrangler.nodes:
+            for island_link in island_wrangler.links:
 
-                for node_group_link in island_wrangler.nodes[ng].links:
+                first_group = island_wrangler.links[island_link].n1
+                second_group = island_wrangler.links[island_link].n2
 
-                    first_group = node_group_mapping[ng]
-                    second_group = node_group_mapping[island_wrangler.links[node_group_link].get_connected(ng).get_id()]
-
-                    if first_group == second_group:
-                        print("\n")
-                        print("node group={}, node group link={}".format(ng, node_group_link))
-
-                        print("{} indexed for list of nodes: {}".format(island_wrangler.nodes[ng].get_id(),
-                                                                        island_wrangler.nodes))
-
-                        print("{} indexed for list of links: {}".format(island_wrangler.links[node_group_link],
-                                                                        island_wrangler.nodes[ng].links))
-
-                    if first_group != second_group:
-                        island_wrangler.nodes[ng].true_closet_connect(self, island_wrangler.nodes[first_group],
-                                                                      island_wrangler.nodes[second_group])
-                        node_group_mapping[second_group] = first_group
+                NodeGroup.true_closet_connect(self, first_group, second_group)
 
 
             island_wrangler.remove_links_of_type(PhysicalNodeLink)
@@ -589,6 +575,7 @@ class NodeGroup(Node):
 
         Node.__init__(self, center.x, center.y)
 
+    @classmethod
     def true_closet_connect(self, nodeWranglerParent: NodeWrangler, first_group, second_group):
 
         shortest_link = None
@@ -637,6 +624,7 @@ class NodeLink(IDtrack.tracked_object):
 
         if n1 == n2:
             raise ValueError
+        print("testing")
 
         IDtrack.tracked_object.__init__(self, None)
 
@@ -732,7 +720,7 @@ def test_graph():
     nw = NodeWrangler()
     nw.gen_nodes_with_radius(50, 20)
 
-    nw.ge_links_between_all(nw, PhysicalNodeLink)
+    nw.gen_links_between_all(nw, PhysicalNodeLink)
 
     nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
     nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
@@ -741,7 +729,7 @@ def test_graph():
 
     nw.remove_links_of_type(PhysicalNodeLink)
 
-    #nw.connect_node_islands()
+    nw.connect_node_islands()
 
     nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
     nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
@@ -756,7 +744,7 @@ def plot_quiver():
     nw = NodeWrangler()
 
     nw.gen_nodes_with_radius(100, 10)
-    nw.ge_links_between_all(1.0)
+    nw.gen_links_between_all(1.0)
 
     nw.iterative_calculate_force_vectors(10, 0.0, 2.0)
     nw.iterative_calculate_force_vectors(10, 2.0, 0.0)

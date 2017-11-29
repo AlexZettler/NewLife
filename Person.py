@@ -1,8 +1,10 @@
 import random
 import xml.etree.ElementTree
 
-import xmlParseHelper as ph
+import XML_Parse_Helper as ph
 
+
+#
 
 
 class Person:
@@ -109,8 +111,8 @@ class ActionController:
 
         def __init__(self,name,target):
             try:
-
-                ActionTree.actions.findall("Action")
+                pass
+                #ActionTree.actions.findall("Action")
 
     def __init__(self):
 
@@ -121,7 +123,7 @@ class ActionController:
         self.currentActionTime = None
 
     def SimulateSecond(self):
-        if self.currentActionTime >= ActionTree.actions.findall(currentAction)
+        if self.currentActionTime >= ActionTree.actions.findall(self.currentAction)
 
 
 class RaceTree:

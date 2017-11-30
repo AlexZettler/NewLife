@@ -233,7 +233,7 @@ class NodeWrangler(object):
 
             island_wrangler.remove_links_of_type(PhysicalNodeLink)
 
-            Plotter(island_wrangler, 15)
+            Plotter(island_wrangler, 5)
 
 
     def gen_closest_n_links(self, N, node_tracker, link_tracker):
@@ -387,7 +387,7 @@ class NodeWrangler(object):
 
             #print(sincomp, coscomp)
 
-            ang = math.atan2(self.links[l].deltaY, self.links[l].deltaX)
+            ang = math.atan2(self.links[l].delta_y, self.links[l].delta_x)
 
             moveMag = 0.0
 
@@ -756,6 +756,7 @@ class NodeGroup(PhysicalNode):
 class NodeLink(IDtrack.TrackedObject):
     '''
     Represents a pair of (bidirectional) connected nodes
+
     n1 is first node
     n2 is second node
     '''
@@ -768,7 +769,7 @@ class NodeLink(IDtrack.TrackedObject):
         IDtrack.TrackedObject.__init__(self, None)
 
     def length_squared(self):
-        return self.deltaX**2 + self.deltaY**2
+        return self.delta_x ** 2 + self.delta_y ** 2
 
     def length(self):
         return math.sqrt(self.length_squared())
@@ -777,14 +778,22 @@ class NodeLink(IDtrack.TrackedObject):
         return self.length()
 
     @property
-    def deltaX(self):
+    def delta_x(self):
         return self.n2.x - self.n1.x
 
     @property
-    def deltaY(self):
+    def delta_y(self):
         return self.n2.y - self.n1.y
 
-    def get_connected(self, n):
+    def get_connected(self, n:int)->int:
+
+        '''
+        Returns the id of the connected node given the id of a node in a link
+
+        :param n: id of link you wish to find connection of
+        :return: id of connected node
+        '''
+
         intn1 = int(self.n1)
         intn2 = int(self.n2)
         intn = int(n)
@@ -805,7 +814,7 @@ class PhysicalNodeLink(NodeLink):
 
         super().__init__(n1, n2, **kwargs)
 
-    def charged_particle_force(self, lenSquared:float = None):
+    def charged_particle_force(self, lenSquared:float = None)->None:
 
         if lenSquared is not None:
             return (self.n1.weight * self.n2.weight) / lenSquared
@@ -840,9 +849,9 @@ class SpringLink(PhysicalNodeLink):
 def test_graph():
 
     nw = NodeWrangler()
-    nw.generate_nodes(10, 10)
+    nw.generate_nodes(30, 100)
 
-    Plotter(nw, 10.0)
+    Plotter(nw, 5)
 
     nw.generate_links_between_all(nw, PhysicalNodeLink)
 
@@ -866,12 +875,12 @@ def test_graph():
 
     #Plotter(nw, 15)
 
-    nw.calculate_force_vectors_iterative(10, 0.5, 0.2)
+    #nw.calculate_force_vectors_iterative(10, 0.5, 0.2)
 
     #nw.add_random_force_vectors(5.0)
     nw.apply_vectors()
 
-    Plotter(nw,10.0)
+    Plotter(nw,5)
 
 '''
 def plot_quiver():

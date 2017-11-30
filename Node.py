@@ -2,11 +2,11 @@ import math
 import random
 import copy
 
-import IDtrack as IDtrack
-import SomeExternalLibs.graphics as gfx
+import IDtrack
+import graphics as gfx
 
-import matplotlib.pyplot as pplot
-import numpy
+#import matplotlib.pyplot as pplot
+#import numpy
 
 
 class NodeWrangler(object):
@@ -14,6 +14,7 @@ class NodeWrangler(object):
     Generates, tracks and alters all points and links in the graph
     """
     def __init__(self):
+
         self.nodes = IDtrack.IDTracker()
         self.links = IDtrack.IDTracker()
 
@@ -32,7 +33,14 @@ class NodeWrangler(object):
              "number of links per node: {}".format(self.get_node_links()),
              "number of islands: {}".format(self.get_node_islands())))
 
-    def generate_nodes(self, n:int, radius:float):
+    def generate_nodes(self, n:int, radius:float)->None:
+        '''
+        Generates n nodes randomly distributed in circle of a certain radius and stores them.
+
+        :param n: Number of nodes to generate
+        :param radius: Radius of circle to generate nodes inside of
+        :return: None
+        '''
         for i in range(n):
             random_node = Pos2D.create_rand_pos_in_circle(radius)
             self.nodes.store_value(PhysicalNode(random_node.x, random_node.y, 1.0))
@@ -69,14 +77,18 @@ class NodeWrangler(object):
 
 
     @classmethod
-    def gen_links_between_all(self, tracker, link_type, **kwargs):
+    def generate_links_between_all(self, tracker, link_type, **kwargs)->None:
+
+        #todo rethink this class and implementation. Perhaps divide the generated nodes into sectors and only connect nodes between nodes in current and 8 neighboring sectors, to keep connections local
+        # todo This guy can be optimized eventually by making a list that is iterated through and have values poped as the list is iterated through.
         '''
+        Generates links between all nodes of the NodeWrangler object. This can be very slow with large numbers of nodes
+
         :param tracker: The NodeWrangler object who's nodes are to be connected
         :param link_type: The type of link generated
         :param kwargs: Additional arguments to pass into the link generation
         :return: None
         '''
-        #todo This guy can be optimized eventually by making a list that is iterated through and have values poped as the list is iterated through.
 
         completedkeys = []
 
@@ -101,17 +113,31 @@ class NodeWrangler(object):
             raise ValueError
 
     def remove_links_of_type(self, instance_type: type):
-        keysToRemove=[]
+        '''
+        Iterates through all links and removes any links of a certain type
 
+        :param instance_type: the type of the link that is to be removed
+        :return: None
+        '''
+
+        #build list of keys to remove
+        keysToRemove=[]
         for l in self.links:
             if type(self.links[l]) is instance_type:
                 keysToRemove.append(l)
                 #print(self.links[selection].n1.links)
 
+        #removes keys
         for l in keysToRemove:
             self.remove_link(l)
 
-    def remove_link(self,link_id):
+    def remove_link(self,link_id)-> None:
+        '''
+        Removes a link and both nodes that reference it
+
+        :param link_id: id of link to remove
+        :return: None
+        '''
         self.links[link_id].n1.links.pop(self.links[link_id].n1.links.index(link_id))
         self.links[link_id].n2.links.pop(self.links[link_id].n2.links.index(link_id))
         self.links.delete_value(link_id)
@@ -181,11 +207,11 @@ class NodeWrangler(object):
 
             # create nodegroups with collection of nodes from each island
             for i in ni:
-                island_wrangler.nodes.store_value(NodeGroup(self, [n for n in ni[i]], None))
+                island_wrangler.nodes.store_value(NodeGroup(self, [n for n in ni[i]]))
 
 
             # create a lose link to find shortest connections
-            island_wrangler.gen_links_between_all(island_wrangler, NodeLink)
+            island_wrangler.generate_links_between_all(island_wrangler, NodeLink)
 
 
             #connect all closest node island groups
@@ -209,9 +235,7 @@ class NodeWrangler(object):
 
             Plotter(island_wrangler, 15)
 
-                #se = NodeGroup(self,node_islands[k])
 
-    #@classmethod
     def gen_closest_n_links(self, N, node_tracker, link_tracker):
 
         retlinks = []
@@ -277,6 +301,7 @@ class NodeWrangler(object):
         else:
             raise TypeError
 
+    '''
     @classmethod
     def ang_from_sin_cos_ratios(self, sinang:float, cosang:float):
 
@@ -301,6 +326,7 @@ class NodeWrangler(object):
         else:
             print("*Error with values of sin and cos components: {} {}*".format(sinang,cosang))
             raise ValueError
+    '''
 
     def reset_move_vectors(self):
         for n in self.nodes:
@@ -376,11 +402,11 @@ class NodeWrangler(object):
             #print("cosang: {} sinang: {} chargeMul: {} ang: {}".format(coscomp*180/math.pi,sincomp*180/math.pi,chargemul,ang*180/math.pi))
             #print("N1:{},N2:{} ".format(self.links[l].n1.moveVec,self.links[l].n2.moveVec))
 
-            self.links[l].n1.moveVec.x += -moveMag / self.links[l].n1.weight * math.cos(ang)
-            self.links[l].n1.moveVec.y += -moveMag / self.links[l].n1.weight * math.sin(ang)
+            self.links[l].n1.move_vector.x += -moveMag / self.links[l].n1.weight * math.cos(ang)
+            self.links[l].n1.move_vector.y += -moveMag / self.links[l].n1.weight * math.sin(ang)
 
-            self.links[l].n2.moveVec.x += moveMag / self.links[l].n2.weight * math.cos(ang)
-            self.links[l].n2.moveVec.y += moveMag / self.links[l].n2.weight * math.sin(ang)
+            self.links[l].n2.move_vector.x += moveMag / self.links[l].n2.weight * math.cos(ang)
+            self.links[l].n2.move_vector.y += moveMag / self.links[l].n2.weight * math.sin(ang)
 
     def add_random_force_vectors(self,radius):
 
@@ -397,8 +423,8 @@ class NodeWrangler(object):
 
                 #print("type: {}, node x: {}, y: {}".format(type(self.nodes[n]),self.nodes[n].x, self.nodes[n].y)) #+= self.nodes[n].moveVec.x
                 #print("type: {}, movevec x: {}, y: {}".format(type(self.nodes[n].moveVec),self.nodes[n].moveVec.x, self.nodes[n].moveVec.y))#+= self.nodes[n].moveVec.y
-                self.nodes[n].x += self.nodes[n].moveVec.x
-                self.nodes[n].y += self.nodes[n].moveVec.y
+                self.nodes[n].x += self.nodes[n].move_vector.x
+                self.nodes[n].y += self.nodes[n].move_vector.y
 
         self.reset_move_vectors()
 
@@ -445,9 +471,8 @@ class Plotter(object):
         self.canvas = gfx.GraphWin("WorldGen", 1000, 800)
 
         if isinstance(node_wrangler_object.nodes[0], PhysicalNode):
-            nodestoplot = {k: [v.pos, v.weight] for k, v in node_wrangler_object.nodes.items()}
-        elif isinstance(node_wrangler_object.nodes[0], NodeGroup):
-            nodestoplot = {k: [v.pos, 1.0] for k, v in node_wrangler_object.nodes.items()}
+            nodestoplot = node_wrangler_object.nodes
+
         else:
             raise TypeError
 
@@ -460,14 +485,14 @@ class Plotter(object):
 
         self.canvas.getMouse()
 
-    def plot_points(self, point_id_dict: dict, scale= 1.0):
+    def plot_points(self, point_id_dict: dict, scale=1.0):
+
+
 
         for n in point_id_dict:
-            c = gfx.Circle(center=gfx.Point(
-                scale * point_id_dict[n][0][0] + self.canvas.width // 2,
-                scale * point_id_dict[n][0][1] + self.canvas.height // 2),
-                radius=scale/5*point_id_dict[n][1]
-            )
+
+            cur_node = point_id_dict[n]
+            c = gfx.Circle(center=self._generate_point(cur_node.x, cur_node.y, scale),radius=scale*cur_node.weight*0.5)
 
             c.draw(self.canvas)
 
@@ -585,6 +610,8 @@ class Pos2D(object):
     def create_rand_pos_in_circle(cls, radius=1.0):
 
         '''
+        return a point randomly generated that is within the circle of given radius
+
         :param radius: the radius of the circle to generate the point within
         :return: A Pos2D object with it's coordinates inside the circle of given radius
         '''
@@ -640,7 +667,7 @@ class PhysicalNode(Node):
     :attribute rooted: A boolean representing if the PhysicalNode object will move when forces are applied to it
     '''
 
-    def __init__(self, x:float, y:float, weight:float):
+    def __init__(self, x:float, y:float, weight:float=1.0):
         Node.__init__(self, x, y)
 
         self.move_vector = Pos2D(0.0, 0.0)
@@ -654,7 +681,7 @@ class PhysicalNode(Node):
         self.rooted = state
 
 
-class NodeGroup(Node):
+class NodeGroup(PhysicalNode):
 
     '''
     NodeGroup represents a collection of nodes with a position at the average position of the nodes
@@ -676,14 +703,14 @@ class NodeGroup(Node):
         # print(len(Nodes))
         center /= float(len(nodes))
 
-        Node.__init__(self, center.x, center.y)
+        super().__init__(center.x, center.y)
 
     @classmethod
-    def true_closet_connect(self, node_wrangler_parent: NodeWrangler, first_group:NodeGroup, second_group:NodeGroup)->None:
+    def true_closet_connect(self, node_wrangler_parent: NodeWrangler, first_group, second_group)->None:
         '''
         :param node_wrangler_parent: 
-        :param first_group: 
-        :param second_group: 
+        :param first_group: A NodeGroup object representing a collection of nodes
+        :param second_group: A NodeGroup object representing a collection of nodes
         :return: None
         '''
 
@@ -696,9 +723,9 @@ class NodeGroup(Node):
 
 
         #iterate through all possible node connections
-        for n1 in first_group.Nodes:
+        for n1 in first_group.contained_nodes:
 
-            for n2 in second_group.Nodes:
+            for n2 in second_group.contained_nodes:
 
                 # print("n1={},n2={}".format(n1, n2))
 
@@ -719,7 +746,7 @@ class NodeGroup(Node):
             node_wrangler_parent.nodes[check_link.n1.get_id()].links.append(check_link.get_id())
             node_wrangler_parent.nodes[check_link.n2.get_id()].links.append(check_link.get_id())
 
-            first_group.Nodes += second_group.Nodes
+            first_group.contained_nodes += second_group.contained_nodes
 
         else:
             raise ValueError
@@ -813,11 +840,11 @@ class SpringLink(PhysicalNodeLink):
 def test_graph():
 
     nw = NodeWrangler()
-    nw.generate_nodes(50, 50)
+    nw.generate_nodes(10, 10)
 
-    Plotter(nw, 15)
+    Plotter(nw, 10.0)
 
-    nw.gen_links_between_all(nw, PhysicalNodeLink)
+    nw.generate_links_between_all(nw, PhysicalNodeLink)
 
     #nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
     #nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
@@ -831,10 +858,10 @@ def test_graph():
     #nw.iterative_calculate_force_vectors(10, 0.0, 1.0)
     #nw.iterative_calculate_force_vectors(10, 1.0, 0.0)
 
-    nw.get_stats()
+    print(nw.get_stats())
     #Plotter(nw,15)
 
-    nw.calc_force_vectors(1.0,0.2)
+    #nw.calc_force_vectors(1.0,0.2)
     nw.apply_vectors()
 
     #Plotter(nw, 15)
@@ -844,7 +871,7 @@ def test_graph():
     #nw.add_random_force_vectors(5.0)
     nw.apply_vectors()
 
-    Plotter(nw,15)
+    Plotter(nw,10.0)
 
 '''
 def plot_quiver():

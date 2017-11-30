@@ -40,7 +40,7 @@ class World:
 
             npos = SomeStatStuff.genRandInsideUnitCircle(10)
 
-            self.locations.store_val(npos)
+            self.locations.store_value(npos)
 
 
 

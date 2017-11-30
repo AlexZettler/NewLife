@@ -157,6 +157,7 @@ class NodeWrangler(object):
         :return: A dictionary containing a list of nodes for each island key
         '''
 
+        #todo comment this(large task)
         #todo change dictionary to list[islands] of lists[ids]
 
         open_set = []
@@ -220,7 +221,6 @@ class NodeWrangler(object):
                     island_wrangler.gen_closest_n_links(1, island_wrangler.nodes, island_wrangler.links), SpringLink,
                     springStrength=0.0, desiredLength=0.0)
 
-            #
             island_wrangler.remove_links_of_type(NodeLink)
 
             for island_link in island_wrangler.links:
@@ -233,7 +233,7 @@ class NodeWrangler(object):
 
             island_wrangler.remove_links_of_type(PhysicalNodeLink)
 
-            Plotter(island_wrangler, 15)
+            Plotter(island_wrangler, 5)
 
 
     def gen_closest_n_links(self, N, node_tracker, link_tracker):
@@ -376,37 +376,35 @@ class NodeWrangler(object):
                 print("n1={}, n2={}".format(self.links[l].n1, self.links[l].n2))
             hyp = math.sqrt(hypotenuse_squared)
 
-            #try:
 
-           # sincomp = self.links[l].deltaY / hyp
-            #coscomp = self.links[l].deltaX / hyp
-
-            # except ZeroDivisionError:
-
-            #print("something happened")
-
-            #print(sincomp, coscomp)
-
+            #ang is the degree measure between the displacement vecotr of the link and the positive x axis
             ang = math.atan2(self.links[l].deltaY, self.links[l].deltaX)
 
-            moveMag = 0.0
+
+            #How much force is applied to the object
+            move_magnatude = 0.0
 
             # need to recalculate hypsquared here so optional parameter to ease calculation
             if isinstance(self.links[l], PhysicalNodeLink):
-                moveMag += charge_strength * self.links[l].charged_particle_force(hypotenuse_squared)
+                move_magnatude -= charge_strength * self.links[l].charged_particle_force(hypotenuse_squared)
 
             if isinstance(self.links[l],SpringLink):
                 #print("spring strength applied")
-                moveMag += spring_strength * self.links[l].get_spring_strength(hyp)
+                move_magnatude += spring_strength * self.links[l].get_spring_strength(hyp)
+
+
+            print("the movement vector for link: {}"
+                  "is in direction: {}"
+                  "and has a magnatude of: {}".format(l,to_degree(ang),move_magnatude))
 
             #print("cosang: {} sinang: {} chargeMul: {} ang: {}".format(coscomp*180/math.pi,sincomp*180/math.pi,chargemul,ang*180/math.pi))
             #print("N1:{},N2:{} ".format(self.links[l].n1.moveVec,self.links[l].n2.moveVec))
 
-            self.links[l].n1.move_vector.x += -moveMag / self.links[l].n1.weight * math.cos(ang)
-            self.links[l].n1.move_vector.y += -moveMag / self.links[l].n1.weight * math.sin(ang)
+            self.links[l].n1.move_vector.x += -move_magnatude / self.links[l].n1.weight * math.cos(ang)
+            self.links[l].n1.move_vector.y += -move_magnatude / self.links[l].n1.weight * math.sin(ang)
 
-            self.links[l].n2.move_vector.x += moveMag / self.links[l].n2.weight * math.cos(ang)
-            self.links[l].n2.move_vector.y += moveMag / self.links[l].n2.weight * math.sin(ang)
+            self.links[l].n2.move_vector.x += move_magnatude / self.links[l].n2.weight * math.cos(ang)
+            self.links[l].n2.move_vector.y += move_magnatude / self.links[l].n2.weight * math.sin(ang)
 
     def add_random_force_vectors(self,radius):
 
@@ -486,8 +484,13 @@ class Plotter(object):
         self.canvas.getMouse()
 
     def plot_points(self, point_id_dict: dict, scale=1.0):
+        # todo commecnt this
+        '''
 
-
+        :param point_id_dict:
+        :param scale:
+        :return:
+        '''
 
         for n in point_id_dict:
 
@@ -756,6 +759,7 @@ class NodeGroup(PhysicalNode):
 class NodeLink(IDtrack.TrackedObject):
     '''
     Represents a pair of (bidirectional) connected nodes
+
     n1 is first node
     n2 is second node
     '''
@@ -765,6 +769,7 @@ class NodeLink(IDtrack.TrackedObject):
         if n1 == n2:
             raise ValueError
 
+        #the init call must be called here
         IDtrack.TrackedObject.__init__(self, None)
 
     def length_squared(self):
@@ -808,9 +813,9 @@ class PhysicalNodeLink(NodeLink):
     def charged_particle_force(self, lenSquared:float = None):
 
         if lenSquared is not None:
-            return (self.n1.weight * self.n2.weight) / lenSquared
+            return self.n1.weight * self.n2.weight / lenSquared
         else:
-            return (self.n1.weight * self.n2.weight) / self.length_squared()
+            return self.n1.weight * self.n2.weight / self.length_squared()
 
 
 class SpringLink(PhysicalNodeLink):
@@ -836,13 +841,18 @@ class SpringLink(PhysicalNodeLink):
     def get_spring_strength(self, length:float=None):
         return self.spring_displacement(length) * self.springStrength
 
+def to_degree(radian):
+    return radian*180/math.pi
+
+def to_radian(degree):
+    return degree / 180*math.pi
 
 def test_graph():
 
     nw = NodeWrangler()
-    nw.generate_nodes(10, 10)
+    nw.generate_nodes(20, 100)
 
-    Plotter(nw, 10.0)
+    Plotter(nw, 5.0)
 
     nw.generate_links_between_all(nw, PhysicalNodeLink)
 
@@ -855,8 +865,8 @@ def test_graph():
 
     nw.connect_node_islands()
 
-    #nw.iterative_calculate_force_vectors(10, 0.0, 1.0)
-    #nw.iterative_calculate_force_vectors(10, 1.0, 0.0)
+    nw.calculate_force_vectors_iterative(10, 0.0, 0.1)
+    #nw.calculate_force_vectors_iterative(10, 1.0, 0.0)
 
     print(nw.get_stats())
     #Plotter(nw,15)
@@ -866,12 +876,12 @@ def test_graph():
 
     #Plotter(nw, 15)
 
-    nw.calculate_force_vectors_iterative(10, 0.5, 0.2)
+    #nw.calculate_force_vectors_iterative(10, 0.5, 0.2)
 
     #nw.add_random_force_vectors(5.0)
     nw.apply_vectors()
 
-    Plotter(nw,10.0)
+    Plotter(nw,5.0)
 
 '''
 def plot_quiver():

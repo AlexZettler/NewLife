@@ -3,41 +3,41 @@ import random
 import copy
 
 import IDtrack as IDtrack
+import SomeExternalLibs.graphics as gfx
 
 import matplotlib.pyplot as pplot
 import numpy
 
-import SomeExternalLibs.graphics as gfx
-
 
 class NodeWrangler(object):
+    """"
+    Generates, tracks and alters all points and links in the graph
+    """
     def __init__(self):
-
-        self.nodes = IDtrack.id_tracker()
-        self.links = IDtrack.id_tracker()
-
-        self._originalNodes = None
-
-        #self.fig = None
+        self.nodes = IDtrack.IDTracker()
+        self.links = IDtrack.IDTracker()
 
     def __str__(self):
         return "\n".join(str(self.nodes[n]) for n in self.nodes)
 
-    def getStats(self):
+    def get_stats(self) -> str:
+        '''
+        Returns a bunch of stats regarding the NodeWrangler
 
-        print("Getting you some stats of the graph...\n\t" + "\n\t".join(
+        :return: A string containing a bunch of stats of the NodeWrangler
+        '''
+        return "Getting you some stats of the graph...\n\t" + "\n\t".join(
             ("there are {} links".format(len(self.links)),
              "unlinked nodes: {}".format(self.get_unlinked_nodes()),
              "number of links per node: {}".format(self.get_node_links()),
-             "number of islands: {}".format(self.get_node_islands()))))
+             "number of islands: {}".format(self.get_node_islands())))
 
-
-    def gen_nodes_with_radius(self, n:int, radius:float):
+    def generate_nodes(self, n:int, radius:float):
         for i in range(n):
-            rn = Pos2D.gen_rand_pos_in_unit_circle(radius)
-            self.nodes.store_val(PhysicalNode(rn.x, rn.y, 1.0))
-        self._originalNodes = copy.deepcopy(self.nodes)
+            random_node = Pos2D.create_rand_pos_in_circle(radius)
+            self.nodes.store_value(PhysicalNode(random_node.x, random_node.y, 1.0))
 
+    '''
     def gen_nodes_with_params(self, n=None, radius=None, density=None):
 
         if n is None:
@@ -54,7 +54,6 @@ class NodeWrangler(object):
             else:
 
                 (math.pi * radius ** 2)
-
                 self.gen_nodes_with_radius(n, )
 
         elif density is None:
@@ -66,10 +65,17 @@ class NodeWrangler(object):
 
         else:
             raise ValueError
+    '''
+
 
     @classmethod
     def gen_links_between_all(self, tracker, link_type, **kwargs):
-
+        '''
+        :param tracker: The NodeWrangler object who's nodes are to be connected
+        :param link_type: The type of link generated
+        :param kwargs: Additional arguments to pass into the link generation
+        :return: None
+        '''
         #todo This guy can be optimized eventually by making a list that is iterated through and have values poped as the list is iterated through.
 
         completedkeys = []
@@ -85,7 +91,7 @@ class NodeWrangler(object):
                 for connection_key in connectToList:
                     pl = link_type(tracker.nodes[key], tracker.nodes[connection_key], **kwargs)
 
-                    tracker.links.store_val(pl)
+                    tracker.links.store_value(pl)
 
                     # print("pl={}".format(pl.get_id()))
                     tracker.nodes[key].links.append(pl.get_id())
@@ -108,7 +114,7 @@ class NodeWrangler(object):
     def remove_link(self,link_id):
         self.links[link_id].n1.links.pop(self.links[link_id].n1.links.index(link_id))
         self.links[link_id].n2.links.pop(self.links[link_id].n2.links.index(link_id))
-        self.links.del_val(link_id)
+        self.links.delete_value(link_id)
 
     #Returns a list of all nodes that are not linked
     def get_unlinked_nodes(self):
@@ -116,13 +122,16 @@ class NodeWrangler(object):
 
     # Returns a list of the number of links of each node
     def get_node_links(self):
-        return {n:len(self.nodes[n].links) for n in self.nodes}
+        return {n: len(self.nodes[n].links) for n in self.nodes}
 
-    def get_node_islands(self):
-
+    def get_node_islands(self) -> {int: []}:
         '''
+        Iterates through all nodes and uses a length first search to populate a dictionary containing all node ids
+
         :return: A dictionary containing a list of nodes for each island key
         '''
+
+        #todo change dictionary to list[islands] of lists[ids]
 
         open_set = []
         closed_set = []
@@ -146,8 +155,6 @@ class NodeWrangler(object):
 
                     for l in self.nodes[int(open_set_selection)].links:
 
-                        # print("nodeID = {}, linkID = {}".format(open_set_selection, l))
-
                         c = self.links[l].get_connected(open_set_selection).get_id()
 
                         if c not in closed_set:
@@ -158,7 +165,6 @@ class NodeWrangler(object):
 
                 island_counter += 1
 
-        #node_island_links = IDtrack.IDtracker()
 
         return node_islands
 
@@ -171,12 +177,11 @@ class NodeWrangler(object):
             if len(ni) <= 1:
                 break
 
-
             island_wrangler = NodeWrangler()
 
             # create nodegroups with collection of nodes from each island
             for i in ni:
-                island_wrangler.nodes.store_val(NodeGroup(self, [n for n in ni[i]], None))
+                island_wrangler.nodes.store_value(NodeGroup(self, [n for n in ni[i]], None))
 
 
             # create a lose link to find shortest connections
@@ -191,11 +196,6 @@ class NodeWrangler(object):
 
             #
             island_wrangler.remove_links_of_type(NodeLink)
-
-            # Plotter(island_wrangler, 15)
-
-            # this handles indexing of changed keys
-            node_group_mapping = {k: island_wrangler.nodes[k].get_id() for k in island_wrangler.nodes}
 
             for island_link in island_wrangler.links:
 
@@ -221,7 +221,7 @@ class NodeWrangler(object):
             print("n={}/{}total nodes. There are {} links".format(n, len(self.nodes)-1,len(self.nodes[n].links)))
 
             #creates a dictionary of connections of the current node as LinkKey: LinkLength
-            lenDict = {k:self.links[k].lengthSquared() for k in self.nodes[n].links}
+            lenDict = {k:self.links[k].length_squared() for k in self.nodes[n].links}
 
             lowest_key=None
 
@@ -260,15 +260,21 @@ class NodeWrangler(object):
         return retlinks
 
     def connect_links(self, links:list, link_type:type, **kwargs):
+        '''
+        :param links: a list of links to connect
+        :param link_type: the type of link desired
+        :param kwargs: additional arguements passed to the constructer of link_type, valid args are as follows:
+            PhysicalNodeLink: None
+            SpringLink: springStrength:float, desiredLength:float
+        :return: None
+        '''
 
+        #ensures that the link to create is a nodelink
         if isinstance(link_type(Pos2D(0, 0), Pos2D(0, 0), **kwargs), NodeLink):
-
             for l in links:
 
                 self.links[l] = link_type(self.links[l].n1, self.links[l].n2, **kwargs)
-
         else:
-
             raise TypeError
 
     @classmethod
@@ -300,44 +306,54 @@ class NodeWrangler(object):
         for n in self.nodes:
             self.nodes[n].moveVec = Pos2D(0.0, 0.0)
 
-    def iterative_calculate_force_vectors(self, iterations:int, startStr:float, endStr:float):
+    def calculate_force_vectors_iterative(self, iterations:int, start_strength:float, end_strength:float):
         '''
         Iteratively applies forces to nodes based on connections
+        Magnitude of force strength scales linerly from startStr to endStr
 
         :param iterations:
-        :param startStr: strength of force application at the start of the iteration
-        :param endStr: strength of force application at the end of the iteration
-        :return:
+        :param start_strength: strength of force application at the start of the iteration
+        :param end_strength: strength of force application at the end of the iteration
+        :return: None
         '''
 
+        #generate
         for x in range(iterations):
-            m=(endStr-startStr)/iterations
-            b = startStr
+            #m is slope
+            m = (end_strength - start_strength) / iterations
+            #b is offset
+            b = start_strength
 
-            self.calc_force_vectors(m * x + b, m * x + b)
+            mag = m * x + b
+
+            self.calc_force_vectors(mag, mag)
             self.apply_vectors()
 
-    def calc_force_vectors(self, charge_strength, spring_strength):
+    def calc_force_vectors(self, charge_strength:float, spring_strength:float):
+
+        '''
+        Calculates move vectors of all nodes in a nodewrangler
+        Move vectors based on forces applied from links
+
+        :param charge_strength: Value to multiply charge forces by
+        :param spring_strength: Value to multiply spring forces by
+        :return: None
+        '''
+
         print("Iterating through vectors for force calculation")
 
         for l in self.links:
 
-            #(l.n1 * l.n2)/l.lengthSquared()
-
-
-
-            hypSq = self.links[l].lengthSquared()
-
-            if hypSq == 0.0:
+            #Hypotenuse stuff
+            hypotenuse_squared = self.links[l].length_squared()
+            if hypotenuse_squared == 0.0:
                 print("n1={}, n2={}".format(self.links[l].n1, self.links[l].n2))
-
-
-            hyp = math.sqrt(hypSq)
+            hyp = math.sqrt(hypotenuse_squared)
 
             #try:
 
-            sincomp = self.links[l].deltaY / hyp
-            coscomp = self.links[l].deltaX / hyp
+           # sincomp = self.links[l].deltaY / hyp
+            #coscomp = self.links[l].deltaX / hyp
 
             # except ZeroDivisionError:
 
@@ -345,13 +361,13 @@ class NodeWrangler(object):
 
             #print(sincomp, coscomp)
 
-            ang = NodeWrangler.ang_from_sin_cos_ratios(sincomp, coscomp)
+            ang = math.atan2(self.links[l].deltaY, self.links[l].deltaX)
 
             moveMag = 0.0
 
             # need to recalculate hypsquared here so optional parameter to ease calculation
             if isinstance(self.links[l], PhysicalNodeLink):
-                moveMag += charge_strength * self.links[l].charged_particle_force(hypSq)
+                moveMag += charge_strength * self.links[l].charged_particle_force(hypotenuse_squared)
 
             if isinstance(self.links[l],SpringLink):
                 #print("spring strength applied")
@@ -365,6 +381,12 @@ class NodeWrangler(object):
 
             self.links[l].n2.moveVec.x += moveMag / self.links[l].n2.weight * math.cos(ang)
             self.links[l].n2.moveVec.y += moveMag / self.links[l].n2.weight * math.sin(ang)
+
+    def add_random_force_vectors(self,radius):
+
+        for n in self.nodes:
+            if isinstance(n,PhysicalNode):
+               n.move_vector += Pos2D.create_rand_pos_in_circle(radius)
 
     def apply_vectors(self):
 
@@ -380,6 +402,7 @@ class NodeWrangler(object):
 
         self.reset_move_vectors()
 
+    '''
     def disp_plot(self):
         data = self.gen_quiver_graph_data()
         pplot.scatter(data[0], data[1])
@@ -389,13 +412,6 @@ class NodeWrangler(object):
         data = self.gen_quiver_graph_data()
         pplot.quiver(data[0], data[1], data[2], data[3], label = "This label")
         pplot.show()
-
-    def assign_moveVec_to_displacement_from_origional_position(self):
-
-        self.apply_vectors()
-        for n in self.nodes:
-            print("n={}".format(n))
-            self.nodes[n].moveVec = Pos2D((self.nodes[n].x-self._originalNodes[n].x, self.nodes[n].y-self._originalNodes[n].y))
 
     def gen_quiver_graph_data(self):
         xdata = [self.nodes[n].x for n in self.nodes]
@@ -410,18 +426,28 @@ class NodeWrangler(object):
 
         #p = pplot.quiver(data[0], data[1], data[2], data[3])
         return data
-
+    '''
 
 class Plotter(object):
-    def __init__(self, nwo: NodeWrangler, scale):
-        self.can = gfx.GraphWin("WorldGen", 1000, 800)
 
-        # can.mainloop()
+    '''
+    An object used to draw a Nodewrangler object into a graphics window
+    '''
 
-        if isinstance(nwo.nodes[0], PhysicalNode):
-            nodestoplot = {k: [v.pos, v.weight] for k, v in nwo.nodes.items()}
-        elif isinstance(nwo.nodes[0], NodeGroup):
-            nodestoplot = {k: [v.pos, 1.0] for k, v in nwo.nodes.items()}
+    def __init__(self, node_wrangler_object: NodeWrangler, scale):
+
+        '''
+
+        :param node_wrangler_object: The nodewrangler object to be plotted
+        :param scale: How distant the points should be drawn
+        '''
+
+        self.canvas = gfx.GraphWin("WorldGen", 1000, 800)
+
+        if isinstance(node_wrangler_object.nodes[0], PhysicalNode):
+            nodestoplot = {k: [v.pos, v.weight] for k, v in node_wrangler_object.nodes.items()}
+        elif isinstance(node_wrangler_object.nodes[0], NodeGroup):
+            nodestoplot = {k: [v.pos, 1.0] for k, v in node_wrangler_object.nodes.items()}
         else:
             raise TypeError
 
@@ -429,34 +455,68 @@ class Plotter(object):
 
         #print(nwo.nodes.keys())
 
-        linestoplot = {k: [v.n1, v.n2] for k, v in nwo.links.items()}
+        linestoplot = {k: [v.n1, v.n2] for k, v in node_wrangler_object.links.items()}
         self.plot_lines(linestoplot, scale)
 
-        self.can.getMouse()
+        self.canvas.getMouse()
 
     def plot_points(self, point_id_dict: dict, scale= 1.0):
 
         for n in point_id_dict:
-            c = gfx.Circle(center=gfx.Point(scale*point_id_dict[n][0][0]+self.can.width//2, scale*point_id_dict[n][0][1]+self.can.height//2), radius=scale/5*point_id_dict[n][1])
-            c.draw(self.can)
+            c = gfx.Circle(center=gfx.Point(
+                scale * point_id_dict[n][0][0] + self.canvas.width // 2,
+                scale * point_id_dict[n][0][1] + self.canvas.height // 2),
+                radius=scale/5*point_id_dict[n][1]
+            )
+
+            c.draw(self.canvas)
+
+
+    def _generate_point(self, x, y, scale) -> gfx.Point:
+        '''
+        :param x: x position of the point
+        :param y: y position of the point
+        :param scale: How much to zoom 
+        :return:
+        '''
+
+        return gfx.Point(scale * x + self.canvas.width // 2, scale * y + self.canvas.width // 2)
 
     def plot_lines(self, line_id_dict: dict, scale=1.0):
+        '''
+        :param line_id_dict:
+        :param scale: How 
+        :return: None
+        '''
 
         for l in line_id_dict:
             #print(point_id_dict[0][0])
-            line = gfx.Line(gfx.Point(scale*line_id_dict[l][0][0]+self.can.width//2, scale*line_id_dict[l][0][1]+self.can.height//2),gfx.Point(scale*line_id_dict[l][1][0]+self.can.width//2, scale*line_id_dict[l][1][1]+self.can.height//2))
+            cur_line = line_id_dict[l]
+            p1 = cur_line[0]
+            p2 = cur_line[1]
 
-            line.draw(self.can)
+            line = gfx.Line(self._generate_point(p1.x, p1.y, scale), self._generate_point(p2.x, p2.y, scale))
+
+            line.draw(self.canvas)
 
 
 #Pos2D class Collection
 class Pos2D(object):
+
+    '''
+    Pos2D:
+        represents a x,y pair of co-ordinates with override methods
+    '''
+
     def __init__(self, x, y):
+        print("position 2D")
         self.x, self.y = float(x), float(y)
 
     def __str__(self):
         return "Pos2D-x:{}, y:{}".format(self.x, self.y)
-        pass
+
+
+    '''
 
     def __getitem__(self, item):
         if item == 0:
@@ -474,6 +534,12 @@ class Pos2D(object):
                 self.y = value
         else:
             raise ValueError
+
+    def __sub__(self, other):
+        #todo perhaps implement some sort of child member add functionality? Is this a good idea?
+        return Pos2D(self.x - other.x, self.y - other.y)
+
+    '''
 
     def __iadd__(self, other):
         if isinstance(other, Pos2D):
@@ -516,27 +582,44 @@ class Pos2D(object):
         return 2
 
     @classmethod
-    def gen_rand_pos_in_unit_circle(cls, radius=1.0):
+    def create_rand_pos_in_circle(cls, radius=1.0):
 
-        x = (random.random() - 0.5) * radius
-        y = (random.random() - 0.5) * radius
+        '''
+        :param radius: the radius of the circle to generate the point within
+        :return: A Pos2D object with it's coordinates inside the circle of given radius
+        '''
 
-        while x ** 2 + y ** 2 > radius ** 2:
+        point_outside_circle = True
+        # Continue loop until loop is inside circle
+        while point_outside_circle:
             x = (random.random() - 0.5) * radius
             y = (random.random() - 0.5) * radius
 
+            #checks if point is inside circle
+            if x ** 2 + y ** 2 < radius ** 2:
+                point_outside_circle = False
+
         return Pos2D(x, y)
 
+class Node(Pos2D, IDtrack.TrackedObject):
+    '''
+    A tracked position with a list of connection ids
+    '''
+    def __init__(self, x:float, y:float):
+        '''
+        :param x: x position of the Node
+        :param y: y position of the Node
+        '''
 
-class Node(Pos2D, IDtrack.tracked_object):
-    def __init__(self, x, y):
+        #Explicitly call Pos2D's init method because of multiple inheritances
+        Pos2D.__init__(self,x,y)
 
-        super().__init__(x,y)
-
+        #A list of link ids that contain this Node
         self.links = []
 
     def track(self, id):
-        IDtrack.tracked_object.__init__(self, id)
+        IDtrack.TrackedObject.__init__(self, id)
+
 
     def __str__(self):
         if id is None:
@@ -548,41 +631,68 @@ class Node(Pos2D, IDtrack.tracked_object):
         return self.get_id()
 
 class PhysicalNode(Node):
-    def __init__(self, x, y, weight):
+
+    '''
+    A Node that has physics attributes
+
+    :attribute move_vector: Pos2D component representing forces applied based on connections every tick
+    :attribute weight: A float representing charge and inertia
+    :attribute rooted: A boolean representing if the PhysicalNode object will move when forces are applied to it
+    '''
+
+    def __init__(self, x:float, y:float, weight:float):
         Node.__init__(self, x, y)
 
+        self.move_vector = Pos2D(0.0, 0.0)
         self.weight = weight
-        self.moveVec = Pos2D(0.0, 0.0)
         self.rooted = False
 
-    def __str(self):
-        return "{}, moveVec: {}".format(str(super), self.moveVec)
+    def __str__(self):
+        return "{}, moveVec: {}".format(str(super), self.move_vector)
+
+    def root(self,state:bool):
+        self.rooted = state
 
 
 class NodeGroup(Node):
-    # todo Build this as a group of nodes acting as a single point in the center of the nodes. The probelm will need to be solved by finding nodes closest to center of another NodeGroup and connecting it to the
-    # todo Debug
-    def __init__(self, wranglerParent: NodeWrangler, Nodes: list, id):
 
-        self.Nodes = Nodes
+    '''
+    NodeGroup represents a collection of nodes with a position at the average position of the nodes
+
+    :attribute contained_nodes: A list of nodes in the parent NodeWrangler
+    '''
+
+    def __init__(self, node_wrangler_parent: NodeWrangler, nodes: list):
+        '''
+        :param node_wrangler_parent: the main NodeWrangler object that the list of nodes are tracked from
+        :param nodes: The nodes that are part of the group
+        '''
+
+        self.contained_nodes = nodes
         center = Pos2D(0.0, 0.0)
 
-        for k in self.Nodes:
-            center += wranglerParent.nodes[k]
+        for k in self.contained_nodes:
+            center += node_wrangler_parent.nodes[k]
         # print(len(Nodes))
-        center /= float(len(Nodes))
+        center /= float(len(nodes))
 
         Node.__init__(self, center.x, center.y)
 
     @classmethod
-    def true_closet_connect(self, nodeWranglerParent: NodeWrangler, first_group, second_group):
+    def true_closet_connect(self, node_wrangler_parent: NodeWrangler, first_group:NodeGroup, second_group:NodeGroup)->None:
+        '''
+        :param node_wrangler_parent: 
+        :param first_group: 
+        :param second_group: 
+        :return: None
+        '''
 
         shortest_link = None
 
-        NL = None
+        check_link = None
 
-        print(first_group.Nodes)
-        print(second_group.Nodes)
+        print(first_group.contained_nodes)
+        print(second_group.contained_nodes)
 
 
         #iterate through all possible node connections
@@ -592,22 +702,22 @@ class NodeGroup(Node):
 
                 # print("n1={},n2={}".format(n1, n2))
 
-                NL = NodeLink(nodeWranglerParent.nodes[n2], nodeWranglerParent.nodes[n1])
+                check_link = NodeLink(node_wrangler_parent.nodes[n2], node_wrangler_parent.nodes[n1])
 
                 if shortest_link is None:
-                    shortest_link = NL
+                    shortest_link = check_link
 
-                elif NL.lengthSquared() < shortest_link.lengthSquared():
+                elif check_link.length_squared() < shortest_link.length_squared():
 
-                    shortest_link = NL
+                    shortest_link = check_link
 
-        if NL is not None:
+        if check_link is not None:
 
-            NL = SpringLink(NL.n1, NL.n2, desiredLength=1.0, springStrength= 1.0)
+            check_link = SpringLink(check_link.n1, check_link.n2, desiredLength=1.0, springStrength= 1.0)
 
-            nodeWranglerParent.links.store_val(NL)
-            nodeWranglerParent.nodes[NL.n1.get_id()].links.append(NL.get_id())
-            nodeWranglerParent.nodes[NL.n2.get_id()].links.append(NL.get_id())
+            node_wrangler_parent.links.store_value(check_link)
+            node_wrangler_parent.nodes[check_link.n1.get_id()].links.append(check_link.get_id())
+            node_wrangler_parent.nodes[check_link.n2.get_id()].links.append(check_link.get_id())
 
             first_group.Nodes += second_group.Nodes
 
@@ -616,21 +726,25 @@ class NodeGroup(Node):
 
 
 #NodeLink class Collection
-class NodeLink(IDtrack.tracked_object):
+class NodeLink(IDtrack.TrackedObject):
+    '''
+    Represents a pair of (bidirectional) connected nodes
+    n1 is first node
+    n2 is second node
+    '''
 
     def __init__(self,n1,n2,**kwargs):
         self.n1, self.n2 = n1, n2
-
         if n1 == n2:
             raise ValueError
 
-        IDtrack.tracked_object.__init__(self, None)
+        IDtrack.TrackedObject.__init__(self, None)
 
-    def lengthSquared(self):
+    def length_squared(self):
         return self.deltaX**2 + self.deltaY**2
 
     def length(self):
-        return math.sqrt(self.lengthSquared())
+        return math.sqrt(self.length_squared())
 
     def __len__(self):
         return self.length()
@@ -653,8 +767,7 @@ class NodeLink(IDtrack.tracked_object):
         elif intn == intn2:
             retid = self.n1
         else:
-
-            raise KeyError
+            raise KeyError("The two nodes requesting connection have the same ID")
 
         #print("Printing the connected link of node {}\n\tThe connected node is: {}\n\tThe link id is: {}".format(self.n1, self.n2, retid))
         return retid
@@ -670,7 +783,7 @@ class PhysicalNodeLink(NodeLink):
         if lenSquared is not None:
             return (self.n1.weight * self.n2.weight) / lenSquared
         else:
-            return (self.n1.weight * self.n2.weight) / self.lengthSquared()
+            return (self.n1.weight * self.n2.weight) / self.length_squared()
 
 
 class SpringLink(PhysicalNodeLink):
@@ -689,7 +802,7 @@ class SpringLink(PhysicalNodeLink):
 
     def spring_displacement(self, length:float = None):
         if length is None:
-            return self.length() - self.desiredLength
+            return self.desiredLength - self.length()
         else:
             return self.desiredLength - length
 
@@ -700,12 +813,14 @@ class SpringLink(PhysicalNodeLink):
 def test_graph():
 
     nw = NodeWrangler()
-    nw.gen_nodes_with_radius(50, 20)
+    nw.generate_nodes(50, 50)
+
+    Plotter(nw, 15)
 
     nw.gen_links_between_all(nw, PhysicalNodeLink)
 
-    nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
-    nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
+    #nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
+    #nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
 
     nw.connect_links(nw.gen_closest_n_links(1, nw.nodes, nw.links), SpringLink, desiredLength=1.0, springStrength= 1.0)
 
@@ -713,19 +828,31 @@ def test_graph():
 
     nw.connect_node_islands()
 
-    nw.iterative_calculate_force_vectors(10, 0.0, 0.5)
-    nw.iterative_calculate_force_vectors(10, 0.5, 0.0)
+    #nw.iterative_calculate_force_vectors(10, 0.0, 1.0)
+    #nw.iterative_calculate_force_vectors(10, 1.0, 0.0)
 
-    nw.getStats()
+    nw.get_stats()
+    #Plotter(nw,15)
+
+    nw.calc_force_vectors(1.0,0.2)
+    nw.apply_vectors()
+
+    #Plotter(nw, 15)
+
+    nw.calculate_force_vectors_iterative(10, 0.5, 0.2)
+
+    #nw.add_random_force_vectors(5.0)
+    nw.apply_vectors()
 
     Plotter(nw,15)
 
+'''
 def plot_quiver():
     print(pplot.get_backend())
 
     nw = NodeWrangler()
 
-    nw.gen_nodes_with_radius(100, 10)
+    nw.generate_nodes(100, 10)
     nw.gen_links_between_all(nw, NodeLink)
 
     nw.iterative_calculate_force_vectors(10, 0.0, 2.0)
@@ -735,7 +862,7 @@ def plot_quiver():
     nw.assign_moveVec_to_displacement_from_origional_position()
     nw.disp_quiver()
     nw.reset_move_vectors()
-
+'''
 
 if __name__ == "__main__":
     test_graph()

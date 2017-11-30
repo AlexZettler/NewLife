@@ -1,16 +1,27 @@
 #A dictionary object that allows for a value to be stored and returns it's key.
 
-class id_tracker(dict):
-
-    def __init__(self,greatestKey=0):
+class IDTracker(dict):
+    '''
+    A dictionary extension used to automatically assign a free key.
+    Values stored must be a TrackedObject subclass, so the value can be acquired from the object itself
+    '''
+    def __init__(self, greatest_key: int= 0):
         super().__init__()
 
+        #A list of keys that were assigned, but have since been deleted
         self.unusedKeys = []
-        self.greatestKey = greatestKey
+        #A counter used to track the largest key
+        self.greatestKey = greatest_key
 
-    #stores a value at a key and returns the key given
-    def store_val(self, val):
-        if isinstance(val, tracked_object):
+
+    def store_value(self, value) -> int:
+        '''
+        stores a value at the next key available and returns the given key
+
+        :param value: The TrackedObject that is to be stored
+        :return: The key given
+        '''
+        if isinstance(value, TrackedObject):
             if len(self.unusedKeys) != 0:
                 key = self.unusedKeys.pop(0)
 
@@ -20,17 +31,22 @@ class id_tracker(dict):
             else:
                 raise KeyError
 
-            tracked_object.__init__(val, key)
+            #assign an id to the tracked object
+            TrackedObject.__init__(value, key)
 
-            self.__setitem__(key,val)
+            self.__setitem__(key, value)
 
             return key
         else:
-            print("Value was not stored, it was of type {}".format(type(val)))
-            raise ValueError
+            raise ValueError("Value was not stored, it was of type {}".format(type(value)))
 
-    #removes the value at the given key and configures this key to be reused
-    def del_val(self, key):
+    def delete_value(self, key: int) -> None:
+        '''
+        Removes the value at the given key and configures this key to be reused
+
+        :param key: the key to be removed
+        :return: None
+        '''
 
         if key in self.keys():
             del(self[key])
@@ -39,9 +55,10 @@ class id_tracker(dict):
             raise ValueError
 
 
-class tracked_object(object):
-    def __init__(self, id: int):
-        self.__id = id
+class TrackedObject(object):
+    def __init__(self, _id: int):
+        print("TrackedObject")
+        self.__id = _id
 
     def get_id(self):
         return self.__id

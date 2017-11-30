@@ -332,7 +332,12 @@ class NodeWrangler(object):
         for n in self.nodes:
             self.nodes[n].moveVec = Pos2D(0.0, 0.0)
 
-    def calculate_force_vectors_iterative(self, iterations:int, start_strength:float, end_strength:float):
+    def calculate_force_vectors_iterative(self,
+                                          iterations:int,
+                                          start_strength:float,
+                                          end_strength:float,
+                                          charge_force_multiplier=1.0,
+                                          spring_force_multiplier=1.0):
         '''
         Iteratively applies forces to nodes based on connections
         Magnitude of force strength scales linerly from startStr to endStr
@@ -352,7 +357,7 @@ class NodeWrangler(object):
 
             mag = m * x + b
 
-            self.calc_force_vectors(mag, mag)
+            self.calc_force_vectors(mag*charge_force_multiplier, mag*spring_force_multiplier)
             self.apply_vectors()
 
     def calc_force_vectors(self, charge_strength:float, spring_strength:float):
@@ -865,8 +870,8 @@ def test_graph():
 
     nw.connect_node_islands()
 
-    nw.calculate_force_vectors_iterative(10, 0.0, 0.1)
-    #nw.calculate_force_vectors_iterative(10, 1.0, 0.0)
+    nw.calculate_force_vectors_iterative(10, 0.0, 0.5, charge_force_multiplier=1.0, spring_force_multiplier=1.0)
+    nw.calculate_force_vectors_iterative(10, 0.5, 0.0, charge_force_multiplier=1.0, spring_force_multiplier=1.0)
 
     print(nw.get_stats())
     #Plotter(nw,15)

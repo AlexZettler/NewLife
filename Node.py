@@ -383,7 +383,7 @@ class NodeWrangler(object):
 
 
             #ang is the degree measure between the displacement vecotr of the link and the positive x axis
-            ang = math.atan2(self.links[l].deltaY, self.links[l].deltaX)
+            ang = math.atan2(self.links[l].delta_y, self.links[l].delta_x)
 
 
             #How much force is applied to the object
@@ -778,7 +778,7 @@ class NodeLink(IDtrack.TrackedObject):
         IDtrack.TrackedObject.__init__(self, None)
 
     def length_squared(self):
-        return self.deltaX**2 + self.deltaY**2
+        return self.delta_x ** 2 + self.delta_y ** 2
 
     def length(self):
         return math.sqrt(self.length_squared())
@@ -787,12 +787,21 @@ class NodeLink(IDtrack.TrackedObject):
         return self.length()
 
     @property
-    def deltaX(self):
+    def delta_x(self):
         return self.n2.x - self.n1.x
 
     @property
-    def deltaY(self):
+    def delta_y(self):
         return self.n2.y - self.n1.y
+
+    def get_connected(self, n:int)->int:
+
+        '''
+        Returns the id of the connected node given the id of a node in a link
+
+        :param n: id of link you wish to find connection of
+        :return: id of connected node
+        '''
 
     def get_line_equation(self):
         '''
@@ -801,7 +810,7 @@ class NodeLink(IDtrack.TrackedObject):
         :return: a tupple containing the m,b pair.
         '''
 
-        m = self.deltaX/self.deltaY
+        m = self.delta_x/self.delta_y
         b = self.n1.y - m*self.n1.x
 
         #todo return the range of x,y values for the given line
@@ -884,8 +893,8 @@ def test_graph():
 
     nw.connect_node_islands()
 
-    nw.calculate_force_vectors_iterative(10, 0.0, 0.5, charge_force_multiplier=0.5, spring_force_multiplier=1.0)
-    nw.calculate_force_vectors_iterative(10, 0.5, 0.0, charge_force_multiplier=0.5, spring_force_multiplier=1.0)
+    nw.calculate_force_vectors_iterative(10, 0.0, 0.5, charge_force_multiplier=1.0, spring_force_multiplier=1.0)
+    nw.calculate_force_vectors_iterative(10, 0.5, 0.0, charge_force_multiplier=1.0, spring_force_multiplier=1.0)
 
     print(nw.get_stats())
     #Plotter(nw,15)

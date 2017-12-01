@@ -383,7 +383,7 @@ class NodeWrangler(object):
 
 
             #ang is the degree measure between the displacement vecotr of the link and the positive x axis
-            ang = math.atan2(self.links[l].deltaY, self.links[l].deltaX)
+            ang = math.atan2(self.links[l].delta_y, self.links[l].delta_x)
 
 
             #How much force is applied to the object

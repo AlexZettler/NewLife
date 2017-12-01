@@ -794,6 +794,20 @@ class NodeLink(IDtrack.TrackedObject):
     def deltaY(self):
         return self.n2.y - self.n1.y
 
+    def get_line_equation(self):
+        '''
+        calculates the linear equation of the link line
+
+        :return: a tupple containing the m,b pair.
+        '''
+
+        m = self.deltaX/self.deltaY
+        b = self.n1.y - m*self.n1.x
+
+        #todo return the range of x,y values for the given line
+
+        return (m, b)
+
     def get_connected(self, n):
         intn1 = int(self.n1)
         intn2 = int(self.n2)
@@ -870,8 +884,8 @@ def test_graph():
 
     nw.connect_node_islands()
 
-    nw.calculate_force_vectors_iterative(10, 0.0, 0.5, charge_force_multiplier=1.0, spring_force_multiplier=1.0)
-    nw.calculate_force_vectors_iterative(10, 0.5, 0.0, charge_force_multiplier=1.0, spring_force_multiplier=1.0)
+    nw.calculate_force_vectors_iterative(10, 0.0, 0.5, charge_force_multiplier=0.5, spring_force_multiplier=1.0)
+    nw.calculate_force_vectors_iterative(10, 0.5, 0.0, charge_force_multiplier=0.5, spring_force_multiplier=1.0)
 
     print(nw.get_stats())
     #Plotter(nw,15)

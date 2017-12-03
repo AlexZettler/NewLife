@@ -1,6 +1,5 @@
 import random
 import xml.etree.ElementTree
-
 import XML_Parse_Helper as ph
 
 
@@ -51,7 +50,7 @@ class Person:
         for w in raceWeights.keys():
 
             #pulls all text attributes aka race names from the race lookup
-            if w in [r.get("name") for r in RaceLookup.races.findall("Race")]:
+            if w in [r.get("name") for r in lookup.races.findall("Race")]:
 
                 cumulativeWeight += raceWeights[w]
 
@@ -82,7 +81,7 @@ class Person:
     def GenName(self, Race):
 
         #Foreach Race in xml file
-        allRaces = RaceLookup.races.findall("Race")
+        allRaces = lookup.races.findall("Race")
         for r in allRaces:
 
             #Get element's text content
@@ -110,8 +109,8 @@ class ActionController:
     class Action:
 
         def __init__(self,name,target):
-            try:
-                pass
+            #try:
+            pass
                 #ActionTree.actions.findall("Action")
 
     def __init__(self):
@@ -122,8 +121,8 @@ class ActionController:
         self.currentAction = None
         self.currentActionTime = None
 
-    def SimulateSecond(self):
-        if self.currentActionTime >= ActionTree.actions.findall(self.currentAction)
+    #def SimulateSecond(self):
+        #if self.currentActionTime >= ActionTree.actions.findall(self.currentAction)
 
 
 class RaceTree:
@@ -138,7 +137,7 @@ class RaceTree:
     @classmethod
     def raceValid(self,race):
 
-        for r in RaceLookup.races.findall("Race"):
+        for r in lookup.races.findall("Race"):
 
             #Get element's text content
             if race == r.get("name"):
@@ -163,6 +162,21 @@ class ActionTree:
         r = self.actions.findall("Action")
 
 
+
+
+
+
+#test()
+class LookupTree(object):
+    def __init__(self,path:str):
+        print("LookupTree generating")
+        self.races = xml.etree.ElementTree.ElementTree(file=path+"Races.xml")
+        self.interests = xml.etree.ElementTree.ElementTree(file=path+"Interests.xml")
+        self.needs = xml.etree.ElementTree.ElementTree(file=path + "Needs.xml")
+
+
+
+'''
 def test():
     print()
     print("*"*20)
@@ -175,24 +189,17 @@ def test():
     #print("*"*20)
     print("Test Complete")
     print("*"*20)
+'''
 
+if __name__ == "__main__":
+    print("running")
 
+    lookup = LookupTree("xml/")
 
-#test()
-
-
-
-
-
-#Look this over in the morning you dipshit... and go mow the grass when you fuck shit up some more
-
-
-
-p = []
-for i in range(10):
-    p.append(Person.NewPerson())
-    print(p[i])
+    p = []
+    for i in range(10):
+        p.append(Person.NewPerson())
+        print(p[i])
 
 #
-
 

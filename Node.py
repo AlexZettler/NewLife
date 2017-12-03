@@ -5,6 +5,7 @@ import copy
 import IDtrack
 import graphics as gfx
 
+
 #import matplotlib.pyplot as pplot
 #import numpy
 
@@ -464,9 +465,7 @@ class Plotter(object):
     '''
 
     def __init__(self, node_wrangler_object: NodeWrangler, scale):
-
         '''
-
         :param node_wrangler_object: The nodewrangler object to be plotted
         :param scale: How distant the points should be drawn
         '''
@@ -515,7 +514,7 @@ class Plotter(object):
 
         return gfx.Point(scale * x + self.canvas.width // 2, scale * y + self.canvas.width // 2)
 
-    def plot_lines(self, line_id_dict: dict, scale=1.0):
+    def plot_lines(self, line_id_dict: dict, scale=1.0) -> None:
         '''
         :param line_id_dict:
         :param scale: How 
@@ -794,14 +793,6 @@ class NodeLink(IDtrack.TrackedObject):
     def delta_y(self):
         return self.n2.y - self.n1.y
 
-    def get_connected(self, n:int)->int:
-
-        '''
-        Returns the id of the connected node given the id of a node in a link
-
-        :param n: id of link you wish to find connection of
-        :return: id of connected node
-        '''
 
     def get_line_equation(self):
         '''
@@ -818,6 +809,12 @@ class NodeLink(IDtrack.TrackedObject):
         return (m, b)
 
     def get_connected(self, n):
+        '''
+        Returns the id of the connected node given the id of a node in a link
+
+        :param n: id of link you wish to find connection of
+        :return: id of connected node
+        '''
         intn1 = int(self.n1)
         intn2 = int(self.n2)
         intn = int(n)
